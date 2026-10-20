@@ -26,6 +26,13 @@ function random(seed) {
 }
 
 function colorFor(node) {
+  if (node.reviewNode) {
+    if (node.reviewCall && node.status === 'added') return '#91e5c0';
+    if (node.reviewCall && node.status === 'removed') return '#dfa0a9';
+    if (node.reviewTest) return node.reviewChanged ? '#b6a4f3' : '#6a7396';
+    if (node.status === 'deleted') return '#d9949a';
+    return node.reviewChanged ? '#83e8cc' : '#597d8a';
+  }
   if (node.kind === 'feature' || node.kind === 'product-universe') return REGION_COLORS.product;
   if (node.kind === 'foundation') return '#9187b7';
   if (node.kind === 'capability') return CAPABILITY_COLORS[hash(node.id) % CAPABILITY_COLORS.length];
@@ -34,6 +41,7 @@ function colorFor(node) {
 }
 
 function importance(node) {
+  if (node.reviewNode) return node.reviewChanged ? 30 + Math.log2(1 + (node.metrics?.importedBy || 0)) : 1 + Math.log2(1 + (node.metrics?.importedBy || 0)) * 0.3;
   const metrics = node.metrics || {};
   return 1 + Math.log2(1 + (metrics.files || 0)) * 2.2
     + Math.log2(1 + (metrics.symbols || 0)) * 0.65
@@ -42,6 +50,11 @@ function importance(node) {
 }
 
 function countLabel(node) {
+  if (node.reviewCall) return `${node.reviewAnchor ? 'definition' : 'call expression'}${node.status && node.status !== 'modified' ? ` · ${node.status}` : ''}`;
+  if (node.reviewNode) {
+    if (!node.reviewChanged) return node.reviewTest ? 'connected test' : 'connected file';
+    return `${node.reviewTest ? 'test · ' : ''}${node.status || 'modified'}${node.reviewed ? ' · reviewed' : ''}`;
+  }
   const metrics = node.metrics || {};
   if (node.kind === 'product-universe') {
     const count = metrics.features ?? metrics.children ?? 0;
@@ -212,6 +225,90 @@ function productPositionsFor(nodes) {
   return positions;
 }
 
+// Review geography uses the same real files in every revision. Changed files
+// form the near constellation; their actual neighbors occupy the outer field.
+function reviewPositionsFor(nodes, edges) {
+  const changed = nodes.filter(node => node.reviewChanged && !node.reviewCall);
+  const implementation = changed.filter(node => !node.reviewTest);
+  const primary = implementation.length ? implementation : changed;
+  const tests = implementation.length ? changed.filter(node => node.reviewTest) : [];
+  const context = nodes.filter(node => !node.reviewChanged && !node.reviewCall);
+  const positions = new Map();
+  primary.forEach((node, index) => {
+    const angle = Math.PI * 0.18 + index / Math.max(1, primary.length) * Math.PI * 2;
+    const radius = primary.length === 1 ? 0 : Math.min(200, 80 + primary.length * 15);
+    positions.set(node.id, new THREE.Vector3(Math.cos(angle) * radius * 1.2, Math.sin(angle) * radius * 0.84, 45 + (hash(node.id) % 35)));
+  });
+  tests.forEach((node, index) => {
+    const angle = -Math.PI / 2 + index / Math.max(1, tests.length) * Math.PI * 2;
+    positions.set(node.id, new THREE.Vector3(Math.cos(angle) * 275, Math.sin(angle) * 190, 15 + (hash(node.id) % 35)));
+  });
+  const connected = new Map(changed.map(node => [node.id, new Set()]));
+  edges.forEach(edge => {
+    if (connected.has(edge.source)) connected.get(edge.source).add(edge.target);
+    if (connected.has(edge.target)) connected.get(edge.target).add(edge.source);
+  });
+  context.sort((a, b) => String(a.id).localeCompare(String(b.id))).forEach((node, index) => {
+    const rng = random(hash(node.id));
+    const angle = index * GOLDEN_ANGLE;
+    const radius = 205 + Math.sqrt((index + 1) / Math.max(1, context.length)) * 150;
+    const anchor = changed.find(item => connected.get(item.id).has(node.id));
+    const position = new THREE.Vector3(Math.cos(angle) * radius * 1.18, Math.sin(angle) * radius * 0.82, -50 - rng() * 110);
+    if (anchor) position.lerp(positions.get(anchor.id), 0.13);
+    positions.set(node.id, position);
+  });
+  const definitions = nodes.filter(node => node.reviewCall && node.reviewAnchor);
+  definitions.forEach((node, index) => {
+    const angle = Math.PI * 0.6 - index / Math.max(1, definitions.length) * Math.PI * 2;
+    const radius = definitions.length === 1 ? 0 : definitions.length === 2 ? 155 : 195;
+    const position = new THREE.Vector3(Math.cos(angle) * radius * 1.3, Math.sin(angle) * radius * 0.9, 45);
+    positions.set(node.id, position);
+    const calls = nodes.filter(candidate => candidate.reviewCall && !candidate.reviewAnchor && edges.some(edge => edge.source === node.id && edge.target === candidate.id));
+    calls.forEach((call, callIndex) => {
+      const callAngle = angle - 1.1 + callIndex / Math.max(1, calls.length - 1) * 2.2;
+      const callRadius = 72 + (callIndex % 2) * 26;
+      positions.set(call.id, position.clone().add(new THREE.Vector3(Math.cos(callAngle) * callRadius, Math.sin(callAngle) * callRadius, -15)));
+    });
+  });
+  for (const node of nodes) if (!positions.has(node.id)) positions.set(node.id, new THREE.Vector3());
+  return positions;
+}
+
+// Presence in one sampled list never proves absence on the other side. Only the
+// explicit edge change supplied by the syntax analysis marks a call added/removed.
+export function buildReviewCallGraph(guide) {
+  const nodes = new Map(), edges = new Map();
+  for (const [section, side] of [['before', 'base'], ['after', 'head']]) {
+    for (const item of guide?.impact?.[section] || []) {
+      if (!['function', 'class', 'method', 'call-expression'].includes(item.kind)) continue;
+      const id = `review-call:${item.id}`;
+      const previous = nodes.get(id);
+      const evidence = (item.evidence || []).filter(ref => ref?.path && Number.isInteger(ref.line) && ref.line > 0).map(ref => ({ ...ref, side: ref.side || side }));
+      const node = previous || { id, sourceId: item.id, name: item.label, path: item.path, kind: item.kind, reviewNode: true, reviewCall: true, reviewAnchor: item.kind !== 'call-expression', reviewChanged: item.kind !== 'call-expression', reviewTest: false, reviewSides: {}, evidence: [], metrics: {} };
+      if (side === 'head') { node.name = item.label; node.path = item.path; }
+      node.reviewSides[side] = true;
+      node.evidence.push(...evidence);
+      nodes.set(id, node);
+      for (const connection of item.connections || []) {
+        const change = ['added', 'removed'].includes(connection.change) ? connection.change : 'unchanged';
+        const target = `review-call:${connection.target}`;
+        const key = `${id}\0${target}\0${change}`;
+        const edge = edges.get(key) || { source: id, target, kind: connection.label || 'calls', change, reviewCall: true, evidence: [], reviewSides: {}, weight: 1 };
+        edge.reviewSides[side] = true;
+        edge.evidence.push(...(connection.evidence || []).filter(ref => ref?.path && Number.isInteger(ref.line) && ref.line > 0).map(ref => ({ ...ref, side: ref.side || side })));
+        edges.set(key, edge);
+      }
+    }
+  }
+  const validEdges = [...edges.values()].filter(edge => nodes.has(edge.source) && nodes.has(edge.target));
+  for (const node of nodes.values()) {
+    if (node.reviewAnchor) continue;
+    const changes = new Set(validEdges.filter(edge => edge.target === node.id).map(edge => edge.change));
+    node.status = changes.size === 1 ? [...changes][0] : 'unchanged';
+  }
+  return { nodes: [...nodes.values()], edges: validEdges };
+}
+
 export class Universe {
   constructor(container, callbacks = {}) {
     this.container = container;
@@ -372,7 +469,7 @@ export class Universe {
       if (this.pointerDragging) return;
       const visual = this.hitTest(event.clientX, event.clientY);
       this.setHovered(visual?.node.id || null);
-      canvas.style.cursor = visual ? 'pointer' : 'grab';
+      canvas.style.cursor = visual || (this.reviewMode && this.hitTestEdge(event.clientX, event.clientY)) ? 'pointer' : 'grab';
     };
     this.onPointerUp = (event) => {
       if (this.pointerStart?.id !== event.pointerId) return;
@@ -380,6 +477,10 @@ export class Universe {
       if (moved < 6 && !this.pointerDragging) {
         const visual = this.hitTest(event.clientX, event.clientY);
         if (visual) this.activateNode(visual.node, event);
+        else if (this.reviewMode) {
+          const edge = this.hitTestEdge(event.clientX, event.clientY);
+          if (edge) this.callbacks.onSelectEdge?.(edge);
+        }
       }
       this.pointerStart = null;
       this.pointerDragging = false;
@@ -406,8 +507,12 @@ export class Universe {
     this.nodes = data.nodes || [];
     this.edges = data.edges || [];
     this.parent = data.parent || null;
+    this.reviewMode = data.layer === 'review';
+    this.reviewHasCalls = this.nodes.some(node => node.reviewCall);
+    this.reviewRevision = data.revision || 'changes';
+    this.reviewStep = data.step || 'brief';
     this.productMode = data.layer === 'product' || ['product-universe', 'feature', 'capability'].includes(this.parent?.kind);
-    this.stage.setAttribute('aria-label', `Interactive three dimensional ${this.productMode ? 'product' : 'code'} map. Drag to orbit, scroll to zoom. Use the list to navigate with a keyboard.`);
+    this.stage.setAttribute('aria-label', this.reviewMode ? 'Pull request universe. Bright planets are changed files. Faint stars are connected files. Drag to orbit, scroll to zoom, or use the file navigator.' : `Interactive three dimensional ${this.productMode ? 'product' : 'code'} map. Drag to orbit, scroll to zoom. Use the list to navigate with a keyboard.`);
     this.selectedId = selectedId;
     this.hoveredId = null;
     // A pointer gesture begun in the previous scope must not select a new node.
@@ -418,9 +523,9 @@ export class Universe {
     releaseGroup(this.graph);
     this.labels.replaceChildren();
     this.visuals.clear();
-    this.positions = this.productMode ? productPositionsFor(this.nodes) : positionsFor(this.nodes, this.edges);
+    this.positions = this.reviewMode ? reviewPositionsFor(this.nodes, this.edges) : this.productMode ? productPositionsFor(this.nodes) : positionsFor(this.nodes, this.edges);
     this.sortedNodes = this.productMode ? [...this.nodes] : [...this.nodes].sort((a, b) => importance(b) - importance(a) || String(a.id).localeCompare(String(b.id)));
-    this.orbits.visible = !this.productMode;
+    this.orbits.visible = !this.productMode && !this.reviewMode;
     this.maxImportance = Math.max(1, ...this.sortedNodes.map(importance));
     this.graphBuildTime = performance.now();
     const dustPositions = [];
@@ -430,27 +535,28 @@ export class Universe {
       const position = this.positions.get(node.id);
       const weight = this.productMode ? 0.8 : importance(node) / this.maxImportance;
       const color = new THREE.Color(colorFor(node));
-      const size = this.productMode ? 8.5 + Math.min(2, Math.sqrt(node.metrics?.children || 0) * 0.45) : 1.5 + Math.pow(weight, 2) * 4.2;
+      const planet = this.productMode || (this.reviewMode && node.reviewChanged);
+      const size = this.reviewMode ? node.reviewChanged ? 11 + Math.min(2.2, Math.log2(1 + (node.metrics?.importedBy || 0)) * 0.38) : node.reviewCall ? 3.3 : 1.3 + Math.min(1.2, Math.log2(1 + (node.metrics?.importedBy || 0)) * 0.2) : this.productMode ? 8.5 + Math.min(2, Math.sqrt(node.metrics?.children || 0) * 0.45) : 1.5 + Math.pow(weight, 2) * 4.2;
       const nodeGroup = new THREE.Group();
       nodeGroup.position.copy(position);
 
       const glow = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: this.glowTexture, color, transparent: true, opacity: this.productMode ? 0.33 : 0.42 + weight * 0.22,
+        map: this.glowTexture, color, transparent: true, opacity: this.reviewMode ? node.reviewChanged ? 0.44 : 0.17 : this.productMode ? 0.33 : 0.42 + weight * 0.22,
         depthWrite: false, blending: THREE.AdditiveBlending,
       }));
       glow.scale.setScalar(size * (this.productMode ? 9 : 12));
-      const body = new THREE.Mesh(this.productMode ? this.planetGeometry : this.coreGeometry,
-        this.productMode
+      const body = new THREE.Mesh(planet ? this.planetGeometry : this.coreGeometry,
+        planet
           ? new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.07, emissive: color, emissiveIntensity: 0.12 })
           : new THREE.MeshBasicMaterial({ color: color.clone().lerp(new THREE.Color('#ffffff'), 0.2) }));
-      body.scale.setScalar(size * (this.productMode ? 0.88 : 0.54));
+      body.scale.setScalar(size * (planet ? 0.88 : 0.54));
       body.userData.sharedGeometry = true;
       nodeGroup.add(glow, body);
 
       let localOrbit = null;
-      if (this.productMode || rank < 18 || node.id === selectedId) {
-        localOrbit = new THREE.Line(orbitGeometry(this.productMode ? size * 1.8 + 6 : size * 3.7 + 4, 0.66, 80, 0.18, Math.PI * 1.72), new THREE.LineBasicMaterial({
-          color, transparent: true, opacity: this.productMode ? 0.2 : rank < 7 ? 0.22 : 0.11, depthWrite: false,
+      if (this.productMode || (this.reviewMode ? node.reviewChanged : rank < 18 || node.id === selectedId)) {
+        localOrbit = new THREE.Line(orbitGeometry(planet ? size * 1.8 + 6 : size * 3.7 + 4, 0.66, 80, 0.18, Math.PI * 1.72), new THREE.LineBasicMaterial({
+          color, transparent: true, opacity: planet ? 0.25 : rank < 7 ? 0.22 : 0.11, depthWrite: false,
         }));
         localOrbit.rotation.set(0.1 + (hash(node.id) % 5) * 0.1, 0.25, (hash(node.id) % 10) * 0.3);
         nodeGroup.add(localOrbit);
@@ -478,14 +584,15 @@ export class Universe {
 
       const label = document.createElement('button');
       label.type = 'button';
-      label.className = 'atlas-star-label';
+      label.className = `atlas-star-label${this.reviewMode ? ` atlas-review-star ${node.reviewChanged ? 'changed' : 'context'}` : ''}`;
       label.dataset.nodeId = node.id;
-      label.setAttribute('aria-label', `${node.name}, ${countLabel(node)}. ${node.metrics?.children ? 'Open this part of the map.' : 'Read details.'}`);
+      if (this.reviewMode) label.title = node.path;
+      label.setAttribute('aria-label', this.reviewMode ? `${node.reviewCall ? `${node.name} in ` : ''}${node.path}, ${countLabel(node)}. ${node.reviewCall ? 'Inspect source evidence.' : node.reviewChanged ? 'Review this file.' : 'Inspect connected file.'}` : `${node.name}, ${countLabel(node)}. ${node.metrics?.children ? 'Open this part of the map.' : 'Read details.'}`);
       Object.assign(label.style, {
-        position: 'absolute', left: '0', top: '0', display: 'none', width: 'max-content', maxWidth: this.productMode ? '240px' : '190px',
+        position: 'absolute', left: '0', top: '0', display: 'none', width: 'max-content', maxWidth: this.reviewMode && node.reviewCall ? '300px' : this.productMode ? '240px' : '190px',
         padding: '5px 8px', border: '1px solid transparent', borderRadius: '6px', background: 'transparent',
         color: '#a9bdc3', textAlign: this.productMode ? 'center' : 'left', pointerEvents: 'auto', cursor: 'pointer',
-        font: `${this.productMode ? '500 14px' : rank < 8 ? '500 13px' : '400 11px'}/1.25 "DM Sans", "Inter", system-ui, sans-serif`,
+        font: `${planet ? '500 14px' : rank < 8 ? '500 13px' : '400 11px'}/1.25 "DM Sans", "Inter", system-ui, sans-serif`,
         letterSpacing: rank < 8 ? '0.005em' : '0.015em', textShadow: '0 1px 8px #080d12, 0 0 15px #080d12',
         whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
         transition: 'color 140ms, background 140ms, border-color 140ms',
@@ -510,7 +617,7 @@ export class Universe {
       label.addEventListener('focus', () => this.setHovered(node.id));
       label.addEventListener('blur', () => this.setHovered(null));
       this.labels.appendChild(label);
-      this.visuals.set(node.id, { node, group: nodeGroup, body, glow, localOrbit, label, count, color, rank, size, weight, screen: new THREE.Vector3(), labelWidth: Math.min(this.productMode ? 240 : 190, Math.max(this.productMode ? 105 : 65, node.name.length * (this.productMode ? 8 : rank < 8 ? 7.6 : 6.3) + 18)) });
+      this.visuals.set(node.id, { node, group: nodeGroup, body, glow, localOrbit, label, count, color, rank, size, weight, screen: new THREE.Vector3(), labelWidth: Math.min(this.reviewMode && node.reviewCall ? 300 : planet ? 240 : 190, Math.max(node.reviewCall ? 130 : planet ? 105 : 65, node.name.length * (planet ? 8 : rank < 8 ? 7.6 : 6.3) + 18)) });
     });
 
     if (dustPositions.length) {
@@ -532,7 +639,7 @@ export class Universe {
     this.selectionOuterRing.visible = false;
     this.graph.add(this.selectionOuterRing);
     this.select(selectedId);
-    this.reset(true);
+    if (!data.preserveCamera) this.reset(true);
     this.lastLabelTime = 0;
     this.requestFrame();
   }
@@ -550,6 +657,7 @@ export class Universe {
   }
 
   buildEdges() {
+    if (this.reviewMode) { this.buildReviewEdges(); return; }
     const valid = this.edges.filter((edge) => this.positions.has(edge.source) && this.positions.has(edge.target) && edge.source !== edge.target);
     // Keep the strongest real relationship per directed pair. Drawing overlapping
     // imports/calls as separate arcs obscures both rather than explaining either.
@@ -603,7 +711,7 @@ export class Universe {
     releaseGroup(this.activeEdges);
     const id = this.hoveredId || this.selectedId;
     const pairs = new Set();
-    const active = this.edges.filter((edge) => (edge.source === id || edge.target === id) && this.positions.has(edge.source) && this.positions.has(edge.target) && edge.source !== edge.target)
+    const active = this.edges.filter((edge) => (!this.reviewMode || this.reviewEdgeVisible(edge)) && (edge.source === id || edge.target === id) && this.positions.has(edge.source) && this.positions.has(edge.target) && edge.source !== edge.target)
       .sort((a, b) => (b.weight || 1) - (a.weight || 1)).filter(edge => {
         const pair = `${edge.source}\0${edge.target}`;
         if (pairs.has(pair)) return false;
@@ -623,7 +731,7 @@ export class Universe {
     for (const edge of active) {
       const curve = this.curveFor(edge);
       const samples = curve.getPoints(28);
-      const color = edge.source === id ? outgoingColor : incomingColor;
+      const color = this.reviewMode && edge.change === 'added' ? new THREE.Color('#90eac8') : this.reviewMode && edge.change === 'removed' ? new THREE.Color('#e5a0a4') : edge.source === id ? outgoingColor : incomingColor;
       for (let index = 1; index < samples.length; index++) {
         positions.push(...samples[index - 1].toArray(), ...samples[index].toArray());
         const brightness = 0.3 + Math.sin(index / samples.length * Math.PI) * 0.45;
@@ -639,7 +747,7 @@ export class Universe {
       for (let index = 0; index < 4; index++) colors.push(color.r * 0.6, color.g * 0.6, color.b * 0.6);
     }
     const lines = new THREE.LineSegments(geometryFromPoints(positions, colors), new THREE.LineBasicMaterial({
-      vertexColors: true, transparent: true, opacity: this.productMode ? 0.36 : this.hoveredId ? 0.25 : 0.2,
+      vertexColors: true, transparent: true, opacity: this.reviewMode ? 0.63 : this.productMode ? 0.36 : this.hoveredId ? 0.25 : 0.2,
       depthWrite: false,
     }));
     this.activeEdges.add(lines);
@@ -697,12 +805,12 @@ export class Universe {
     for (const [id, visual] of this.visuals) {
       const selected = id === this.selectedId;
       const hovered = id === this.hoveredId;
-      visual.label.style.color = selected || hovered ? '#e3f7f1' : this.productMode || visual.rank < 9 ? '#b7cdce' : '#829da6';
-      visual.label.style.background = selected ? 'rgba(17,38,37,.88)' : hovered ? 'rgba(13,26,32,.91)' : 'transparent';
-      visual.label.style.borderColor = selected ? 'rgba(111,233,203,.32)' : hovered ? 'rgba(111,233,203,.16)' : 'transparent';
+      visual.label.style.color = selected || hovered ? '#e3f7f1' : this.reviewMode ? visual.node.reviewChanged ? '#c9e3df' : visual.node.reviewCall && visual.node.status === 'added' ? '#abd9c7' : visual.node.reviewCall && visual.node.status === 'removed' ? '#d99ba6' : '#708c97' : this.productMode || visual.rank < 9 ? '#b7cdce' : '#829da6';
+      visual.label.style.background = this.reviewMode ? 'transparent' : selected ? 'rgba(17,38,37,.88)' : hovered ? 'rgba(13,26,32,.91)' : 'transparent';
+      visual.label.style.borderColor = this.reviewMode ? 'transparent' : selected ? 'rgba(111,233,203,.32)' : hovered ? 'rgba(111,233,203,.16)' : 'transparent';
       visual.label.style.zIndex = selected || hovered ? '4' : '1';
       visual.label.setAttribute('aria-pressed', String(selected));
-      visual.count.style.display = this.productMode || selected || hovered || visual.rank < 9 ? 'block' : 'none';
+      visual.count.style.display = this.productMode || selected || hovered || (this.reviewMode ? visual.node.reviewChanged || visual.node.reviewCall : visual.rank < 9) ? 'block' : 'none';
       visual.count.style.color = selected ? '#7ba79c' : '#657e86';
     }
   }
@@ -714,12 +822,123 @@ export class Universe {
     let best = null;
     let bestDistance = Infinity;
     for (const visual of this.visuals.values()) {
+      if (!visual.group.visible) continue;
       const screen = visual.screen;
       if (screen.z > 1 || screen.z < -1) continue;
       const distance = Math.hypot(x - screen.x, y - screen.y);
       if (distance < Math.max(12, visual.projectedSize || 12) && distance < bestDistance) { best = visual; bestDistance = distance; }
     }
     return best;
+  }
+
+  reviewNodeVisible(node) {
+    if (node.reviewTest || this.reviewTestOnly) return false;
+    if (node.reviewCall && this.reviewStep !== 'impact') return false;
+    if (!node.reviewCall && this.reviewStep === 'impact' && this.reviewHasCalls) return false;
+    return true;
+  }
+
+  reviewEdgeVisible(edge) {
+    const source = this.visuals.get(edge.source)?.node, target = this.visuals.get(edge.target)?.node;
+    if ((source && !this.reviewNodeVisible(source)) || (target && !this.reviewNodeVisible(target))) return false;
+    return this.reviewRevision === 'changes' || (this.reviewRevision === 'base' ? edge.change !== 'added' : edge.change !== 'removed');
+  }
+
+  buildReviewEdges() {
+    this.reviewLines = new THREE.Group();
+    this.reviewLines.visible = this.edgesVisible;
+    this.edgeLines = this.reviewLines;
+    this.graph.add(this.reviewLines);
+    const valid = this.edges.filter(edge => this.positions.has(edge.source) && this.positions.has(edge.target) && edge.source !== edge.target);
+    this.drawnEdges = valid;
+    this.reviewEdgeObjects = valid.map(edge => {
+      const changed = edge.change === 'added' || edge.change === 'removed';
+      const geometry = new THREE.BufferGeometry().setFromPoints(this.curveFor(edge).getPoints(36));
+      const material = edge.change === 'removed'
+        ? new THREE.LineDashedMaterial({ color: '#d58f99', transparent: true, opacity: 0.48, dashSize: 4, gapSize: 4, depthWrite: false })
+        : new THREE.LineBasicMaterial({ color: changed ? '#72d6b4' : '#477b85', transparent: true, opacity: changed ? 0.5 : 0.12, depthWrite: false });
+      const line = new THREE.Line(geometry, material);
+      if (edge.change === 'removed') line.computeLineDistances();
+      line.visible = this.reviewEdgeVisible(edge);
+      this.reviewLines.add(line);
+      return { edge, line };
+    });
+    this.activeEdges = new THREE.Group();
+    this.activeEdges.visible = this.edgesVisible;
+    this.graph.add(this.activeEdges);
+  }
+
+  setReviewState({ revision = this.reviewRevision, reviewed = new Set(), selectedId = this.selectedId, step = this.reviewStep, testPaths } = {}) {
+    if (!this.reviewMode || !this.renderer) return;
+    this.reviewRevision = revision;
+    this.reviewStep = step;
+    this.selectedId = this.visuals.has(selectedId) ? selectedId : null;
+    if (testPaths) for (const visual of this.visuals.values()) {
+      if (visual.node.reviewChanged) visual.node.reviewTest = testPaths.has(visual.node.path);
+    }
+    this.reviewTestOnly = this.nodes.some(node => node.reviewChanged && !node.reviewCall) && !this.nodes.some(node => node.reviewChanged && !node.reviewCall && !node.reviewTest);
+    for (const { edge, line } of this.reviewEdgeObjects || []) line.visible = this.reviewEdgeVisible(edge);
+    this.drawnEdges = (this.reviewEdgeObjects || []).filter(item => item.line.visible).map(item => item.edge);
+    for (const visual of this.visuals.values()) {
+      const node = visual.node;
+      node.reviewed = reviewed.has(node.path);
+      const color = new THREE.Color(colorFor(node));
+      visual.color.copy(color);
+      visual.body.material.color.copy(color);
+      visual.body.material.emissive?.copy(color);
+      visual.glow.material.color.copy(color);
+      visual.localOrbit?.material.color.copy(color);
+      visual.group.visible = this.reviewNodeVisible(node);
+      if (!visual.group.visible) visual.label.style.display = 'none';
+      const absent = (revision === 'base' && node.status === 'added') || (revision === 'head' && ['deleted', 'removed'].includes(node.status));
+      const notSampled = node.reviewCall && revision !== 'changes' && !node.reviewSides?.[revision] && !absent;
+      visual.reviewAbsent = absent;
+      visual.reviewNotSampled = notSampled;
+      visual.body.material.transparent = true;
+      visual.body.material.opacity = absent ? 0.14 : notSampled ? 0.25 : node.reviewChanged ? 1 : 0.55;
+      visual.glow.material.opacity = absent || notSampled ? 0.07 : node.reviewChanged ? 0.44 : 0.17;
+      if (visual.localOrbit) visual.localOrbit.material.opacity = node.reviewed ? 0.62 : absent ? 0.08 : 0.25;
+      const sideNote = absent ? `absent in ${revision}` : notSampled ? `not sampled in ${revision}` : '';
+      visual.count.textContent = `${node.reviewed ? '✓ ' : ''}${countLabel(node)}${sideNote ? ` · ${sideNote}` : ''}`;
+      visual.label.setAttribute('aria-label', `${node.reviewCall ? `${node.name} in ` : ''}${node.path}, ${countLabel(node)}${sideNote ? `, ${sideNote}` : ''}. ${node.reviewCall ? 'Inspect source evidence.' : node.reviewChanged ? 'Review this file.' : 'Inspect connected file.'}`);
+    }
+    this.select(selectedId);
+    if (this.selectionRing && !this.visuals.get(selectedId)?.group.visible) {
+      this.selectionRing.visible = false;
+      this.selectionOuterRing.visible = false;
+    }
+  }
+
+  hitTestEdge(clientX, clientY) {
+    if (!this.reviewMode || !this.edgesVisible || !this.camera) return null;
+    const bounds = this.stage.getBoundingClientRect();
+    const pointer = new THREE.Vector2(clientX - bounds.left, clientY - bounds.top);
+    let best = null, bestDistance = 6;
+    for (const { edge, line } of this.reviewEdgeObjects || []) {
+      if (!line.visible) continue;
+      const points = this.curveFor(edge).getPoints(22).map(point => {
+        point.applyMatrix4(this.graph.matrixWorld).project(this.camera);
+        return new THREE.Vector2((point.x * 0.5 + 0.5) * this.width, (-point.y * 0.5 + 0.5) * this.height);
+      });
+      for (let index = 1; index < points.length; index++) {
+        const from = points[index - 1], to = points[index], segment = to.clone().sub(from);
+        const amount = THREE.MathUtils.clamp(pointer.clone().sub(from).dot(segment) / Math.max(0.01, segment.lengthSq()), 0, 1);
+        const distance = pointer.distanceTo(from.clone().addScaledVector(segment, amount));
+        if (distance < bestDistance) { bestDistance = distance; best = edge; }
+      }
+    }
+    return best;
+  }
+
+  focusReview(id) {
+    const visual = this.visuals.get(id);
+    if (!visual || !visual.group.visible || !this.camera) return;
+    this.select(id);
+    // Keep surrounding context in frame; selection does not dive into a planet.
+    const point = visual.group.getWorldPosition(new THREE.Vector3());
+    const target = this.controls.target.clone().lerp(point, 0.16);
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    this.flyTo(target, target.clone().add(offset));
   }
 
   focus(id) {
@@ -819,7 +1038,7 @@ export class Universe {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(this.width, this.height);
-    if ((Math.abs(oldAspect - this.camera.aspect) > 0.25 || (this.productMode && Math.abs(oldHeight - this.height) > 16)) && this.nodes.length && !this.pointerDragging) this.reset(true);
+    if (!this.reviewMode && (Math.abs(oldAspect - this.camera.aspect) > 0.25 || (this.productMode && Math.abs(oldHeight - this.height) > 16)) && this.nodes.length && !this.pointerDragging) this.reset(true);
     this.lastLabelTime = 0;
     this.requestFrame();
   }
@@ -828,6 +1047,7 @@ export class Universe {
     const projected = [];
     this.camera.updateMatrixWorld();
     for (const visual of this.visuals.values()) {
+      if (!visual.group.visible) { visual.label.style.display = 'none'; continue; }
       visual.group.getWorldPosition(scratch);
       const distance = this.camera.position.distanceTo(scratch);
       scratch.project(this.camera);
@@ -835,12 +1055,13 @@ export class Universe {
       visual.projectedSize = visual.size * this.height / (distance * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
       const forced = visual.node.id === this.selectedId || visual.node.id === this.hoveredId;
       const connected = this.connectedIds?.has(visual.node.id);
-      const priority = (forced ? 10000 : 0) + (connected ? 30 : 0) + (1 - visual.rank / Math.max(1, this.nodes.length)) * 35 + visual.projectedSize;
+      const changedCall = visual.node.reviewCall && ['added', 'removed'].includes(visual.node.status);
+      const priority = (forced ? 10000 : 0) + (this.reviewMode && visual.node.reviewChanged ? 500 : 0) + (changedCall ? 200 : 0) + (connected ? 30 : 0) + (1 - visual.rank / Math.max(1, this.nodes.length)) * 35 + visual.projectedSize;
       projected.push({ visual, priority, forced });
     }
     projected.sort((a, b) => b.priority - a.priority);
     const occupied = [];
-    const maxLabels = this.productMode && this.nodes.length <= 12 ? this.nodes.length : Math.min(55, Math.max(16, Math.floor(this.width * this.height / 11500)));
+    const maxLabels = this.reviewMode ? Math.max(this.nodes.filter(node => node.reviewChanged).length, Math.min(17, Math.floor(this.width * this.height / 23000))) : this.productMode && this.nodes.length <= 12 ? this.nodes.length : Math.min(55, Math.max(16, Math.floor(this.width * this.height / 11500)));
     const labelBottom = this.height - (this.productMode ? Math.min(90, this.height * 0.22) : 7);
     let displayed = 0;
     for (const { visual, forced } of projected) {
@@ -849,7 +1070,7 @@ export class Universe {
         visual.label.style.display = 'none';
         continue;
       }
-      const labelHeight = this.productMode || forced || visual.rank < 9 ? 43 : 28;
+      const labelHeight = this.productMode || forced || visual.node.reviewCall || visual.rank < 9 ? 43 : 28;
       const labelWidth = visual.labelWidth;
       const offset = Math.max(this.productMode ? 17 : 8, Math.min(this.productMode ? 33 : 20, visual.projectedSize * 0.65));
       const candidates = [
@@ -869,7 +1090,7 @@ export class Universe {
         chosen = { ...candidate, rect };
         break;
       }
-      if (!chosen && (forced || (this.productMode && this.nodes.length <= 12))) {
+      if (!chosen && (forced || (this.reviewMode && visual.node.reviewChanged) || (visual.node.reviewCall && ['added', 'removed'].includes(visual.node.status)) || (this.productMode && this.nodes.length <= 12))) {
         const overlap = candidate => occupied.reduce((sum, other) => sum
           + Math.max(0, Math.min(candidate.x + labelWidth, other.x + other.w) - Math.max(candidate.x, other.x))
           * Math.max(0, Math.min(candidate.y + labelHeight, other.y + other.h) - Math.max(candidate.y, other.y)), 0);
@@ -911,7 +1132,7 @@ export class Universe {
       for (const visual of this.visuals.values()) {
         const selected = visual.node.id === this.selectedId;
         const hovered = visual.node.id === this.hoveredId;
-        visual.glow.material.opacity = (this.productMode ? selected || hovered ? 0.52 : 0.33 : selected || hovered ? 0.8 : 0.42 + visual.weight * 0.22) + Math.sin(elapsed * 0.9 + visual.rank * 1.7) * 0.03;
+        visual.glow.material.opacity = (this.reviewMode ? visual.reviewAbsent || visual.reviewNotSampled ? 0.05 : visual.node.reviewChanged ? selected || hovered ? 0.62 : 0.44 : hovered ? 0.45 : 0.17 : this.productMode ? selected || hovered ? 0.52 : 0.33 : selected || hovered ? 0.8 : 0.42 + visual.weight * 0.22) + Math.sin(elapsed * 0.9 + visual.rank * 1.7) * 0.02;
       }
     }
     if (this.selectionRing?.visible) {

@@ -1,0 +1,87 @@
+.ru-universe {
+  position: absolute;
+  inset: 0 0 76px 300px;
+  min-width: 0;
+  overflow: hidden;
+  z-index: 0;
+  color: #a6c0c6;
+  transition: left 420ms ease, right 420ms ease;
+}
+.ru-universe[data-step="files"], .ru-universe[data-step="tests"] {
+  left: 0;
+  right: min(54vw, 760px);
+}
+.ru-universe-viewport { position: absolute; inset: 0; }
+.ru-map-caption {
+  position: absolute; top: 29px; left: 28px; display: flex; align-items: center; gap: 11px;
+  font-size: 10px; color: #69858c; letter-spacing: .08em; pointer-events: none;
+}
+.ru-map-caption > span { font-size: 9px; letter-spacing: .16em; color: #96b6b6; }
+.ru-map-caption i { width: 2px; height: 2px; border-radius: 50%; background: #526b73; }
+.ru-map-tools {
+  position: absolute; top: 58px; right: 21px; display: flex; gap: 1px; align-items: center;
+  padding: 4px; border-radius: 30px; background: rgba(10, 22, 28, .64); backdrop-filter: blur(14px);
+  border: 1px solid rgba(135, 188, 191, .09);
+}
+.ru-map-tools button, .ru-map-find button {
+  display: grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0;
+  color: #8eaeb4; background: transparent; border-radius: 50%; cursor: pointer;
+}
+.ru-map-tools button:hover, .ru-map-find button:hover { background: rgba(140, 219, 205, .08); color: #d1f3e9; }
+.ru-map-tools button:focus-visible, .ru-map-find button:focus-visible, .ru-map-navigator button:focus-visible, .ru-map-fallback button:focus-visible { outline: 2px solid #83dec2; outline-offset: 3px; }
+.ru-map-tools > span { height: 13px; width: 1px; background: #263d42; margin: 0 4px; }
+.ru-map-bottom { position: absolute; bottom: 19px; left: 28px; right: 25px; pointer-events: none; display: flex; flex-direction: column; align-items: flex-start; gap: 13px; }
+.ru-map-readout { display: grid; gap: 5px; padding: 8px 0; text-shadow: 0 2px 14px #081017; max-width: 100%; }
+.ru-map-readout strong { color: #bcd7d5; font-size: 11px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ru-map-readout > span { color: #718b94; font-size: 10px; letter-spacing: .015em; }
+.ru-map-legend { display: flex; gap: 13px; align-items: center; flex-wrap: wrap; }
+.ru-map-legend > span { display: flex; align-items: center; gap: 5px; color: #7d969e; font-size: 9px; white-space: nowrap; }
+.ru-map-legend i, .ru-map-navigator i, .ru-map-fallback i { display: block; width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.ru-map-legend .changed, .ru-map-navigator .changed, .ru-map-fallback .changed { background: #83e8cc; box-shadow: 0 0 7px #83e8cc77; }
+.ru-map-legend .test, .ru-map-navigator .test, .ru-map-fallback .test { background: #b6a4f3; box-shadow: 0 0 7px #b6a4f355; }
+.ru-map-legend .context, .ru-map-navigator .context { background: #597d8a; }
+.ru-map-legend .added-line { width: 13px; height: 1px; background: #72d6b4; border-radius: 0; }
+.ru-map-legend .removed-line { width: 13px; height: 0; border-top: 1px dashed #d58f99; border-radius: 0; }
+.ru-map-hint { color: #516b77; font-size: 9px; letter-spacing: .02em; }
+.ru-map-navigator {
+  position: absolute; top: 100px; right: 22px; width: min(360px, calc(100% - 44px)); max-height: min(440px, calc(100% - 160px));
+  display: flex; flex-direction: column; background: rgba(10, 21, 28, .96); border: 1px solid #233940; border-radius: 15px;
+  backdrop-filter: blur(24px); box-shadow: 0 18px 70px #0008; z-index: 8; overflow: hidden;
+}
+.ru-map-find { display: flex; align-items: center; gap: 8px; margin: 8px 12px 5px; padding-bottom: 5px; border-bottom: 1px solid #23353c; }
+.ru-map-find > input { width: 100%; min-width: 0; color: #d3e7e4; background: none; border: 0; outline: none; font: inherit; font-size: 12px; line-height: 1.7; padding: 9px 0; }
+.ru-map-navigator > div + div { overflow-y: auto; padding: 3px 7px 8px; }
+.ru-map-navigator > div + div > button, .ru-map-fallback > button {
+  display: flex; align-items: center; gap: 10px; text-align: left; width: 100%; padding: 10px 9px; border: 0; border-radius: 6px; background: transparent; color: #b4cdce; font: inherit; font-size: 11px; line-height: 1.5; cursor: pointer;
+}
+.ru-map-navigator > div + div > button:hover, .ru-map-navigator button[aria-pressed="true"], .ru-map-fallback > button:hover { background: #172e33; }
+.ru-map-navigator button > span, .ru-map-fallback button > span { min-width: 0; overflow-wrap: anywhere; }
+.ru-map-navigator small, .ru-map-fallback small { display: block; color: #748f97; font-size: 9px; margin-top: 3px; }
+.ru-map-navigator p { color: #8aa3aa; padding: 5px 16px 13px; font-size: 11px; }
+.ru-map-fallback { position: absolute; inset: 90px 30px 130px; overflow-y: auto; padding: 12px; }
+.ru-map-fallback > p { font-size: 13px; color: #99b4be; margin-bottom: 20px; max-width: 340px; line-height: 1.7; }
+.ru-map-empty { position: absolute; top: 43%; left: 12%; right: 12%; text-align: center; display: grid; gap: 9px; pointer-events: none; }
+.ru-map-empty strong { color: #bad1d1; font-size: 15px; font-weight: 400; }
+.ru-map-empty span { color: #748e98; font-size: 12px; }
+.ru-universe .atlas-review-star:focus-visible { outline: 1px solid #8ce4cc; outline-offset: 3px; }
+.ru-universe .atlas-review-star.context { opacity: .7; }
+.ru-universe .atlas-review-star.context:hover, .ru-universe .atlas-review-star.context:focus-visible { opacity: 1; }
+.ru-universe[data-step="files"] .ru-map-caption, .ru-universe[data-step="tests"] .ru-map-caption { top: 72px; }
+@media (max-width: 1080px) {
+  .ru-universe { left: 275px; }
+  .ru-map-caption { top: 69px; left: 22px; }
+  .ru-map-tools { right: 17px; }
+  .ru-map-bottom { left: 21px; right: 18px; }
+  .ru-map-legend { gap: 9px; }
+}
+@media (max-width: 800px) {
+  .ru-universe, .ru-universe[data-step="files"], .ru-universe[data-step="tests"] { inset: 0 0 auto; height: 42vh; transition: none; }
+  .ru-map-caption, .ru-universe[data-step="files"] .ru-map-caption, .ru-universe[data-step="tests"] .ru-map-caption { top: 65px; left: 20px; }
+  .ru-map-bottom { left: 20px; bottom: 10px; gap: 8px; }
+  .ru-map-readout { display: none; }
+  .ru-map-hint { display: none; }
+  .ru-map-tools { top: 55px; right: 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ru-universe { transition: none; }
+}

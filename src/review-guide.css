@@ -1,0 +1,479 @@
+/* Review is a journey through the same universe. Text and tools sit at its edges. */
+.review-guide.ru-workspace {
+  --ru-ink: #e0eae5;
+  --ru-muted: #8197a1;
+  --ru-line: #90b7b020;
+  --ru-accent: #a1e4c9;
+  --ru-warm: #d8bf87;
+  --ru-inspector-width: min(54%, 760px);
+  position: relative;
+  isolation: isolate;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--ru-ink);
+  background: #080f15;
+  font-size: 13px;
+}
+.review-guide.ru-workspace::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 490px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, #080f15f5, #080f15b8 64%, #080f1500);
+}
+.review-guide.ru-workspace::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 125px;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(0deg, #080f15f2, #080f1500);
+}
+.review-guide.ru-workspace[data-step="files"]::before,
+.review-guide.ru-workspace[data-step="tests"]::before { display: none; }
+@media (min-width: 801px) {
+  .review-guide .ru-universe[data-step="files"],
+  .review-guide .ru-universe[data-step="tests"] { right: var(--ru-inspector-width); }
+}
+.review-guide button, .review-guide input, .review-guide select, .review-guide textarea { font: inherit; }
+.review-guide button { line-height: 1.45; }
+.review-guide svg { flex-shrink: 0; }
+.review-guide button:focus-visible, .review-guide a:focus-visible, .review-guide summary:focus-visible,
+.review-guide textarea:focus-visible, .review-guide input:focus-visible, .review-guide select:focus-visible {
+  outline: 2px solid #a1e4c9;
+  outline-offset: 4px;
+}
+.review-guide button:disabled { opacity: .35; }
+.review-guide code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.review-guide p { line-height: 1.8; }
+.review-guide h2, .review-guide h3 { margin: 0; }
+.review-guide textarea, .review-guide select, .review-guide input:not([type=checkbox]) {
+  min-width: 0;
+  max-width: 100%;
+  color: #c9ddd6;
+  background: #0d1c2280;
+  border: 1px solid #67887e45;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.review-guide textarea { width: 100%; min-height: 85px; resize: vertical; }
+.review-guide textarea::placeholder, .review-guide input::placeholder { color: #6c858d; }
+.review-guide select { width: 100%; appearance: auto; }
+.review-guide input[type=checkbox] { width: 15px; height: 15px; margin: 3px 0 0; accent-color: #9bd8bd; flex-shrink: 0; }
+.ru-toolbar { position: absolute; z-index: 4; top: 22px; left: 36px; right: 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; pointer-events: none; }
+.ru-toolbar > * { pointer-events: auto; }
+.ru-scope-label { display: flex; align-items: center; gap: 17px; min-width: 0; }
+.ru-overline { display: flex; align-items: center; gap: 8px; color: #95b5a8; font-size: 9px; font-weight: 500; letter-spacing: 1.8px; text-transform: uppercase; line-height: 1.7; }
+.ru-progress-fraction { display: flex; align-items: center; gap: 7px; padding: 0; color: #85aa9a; font: 10px/1.5 ui-monospace, monospace; letter-spacing: 1px; }
+.ru-progress-fraction > span { font-size: 9px; color: #66877f; letter-spacing: 0; }
+.ru-revisions { display: flex; align-items: center; gap: 3px; padding: 4px; border: 1px solid #729a8e25; background: #0b1720b3; border-radius: 24px; backdrop-filter: blur(18px); }
+.ru-revisions > button { border-radius: 20px; padding: 6px 12px; color: #789299; font-size: 10px; }
+.ru-revisions > button:hover { color: #d2e5dc; }
+.ru-revisions > button.active, .ru-revisions > button[aria-pressed=true] { color: #c8ebda; background: #2b52414f; }
+.ru-revisions code { display: none; }
+.ru-narrative { position: absolute; z-index: 3; top: 98px; left: 40px; width: 300px; max-height: calc(100% - 210px); overflow: auto; scrollbar-width: thin; padding: 0 12px 22px 0; }
+.ru-narrative > .ru-overline { margin-bottom: 16px; }
+.ru-narrative h2 { font: 400 clamp(30px, 2.8vw, 40px)/1.16 'Iowan Old Style', 'Palatino Linotype', Georgia, serif; letter-spacing: -1px; color: #e2ece3; overflow-wrap: anywhere; }
+.ru-narrative-brief h2 { font-size: 34px; line-height: 1.23; letter-spacing: -.7px; }
+.ru-narrative h2 .ru-title-code { display: inline-block; max-width: 100%; white-space: nowrap; font: 400 clamp(17px, 1.6vw, 22px)/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: -.7px; color: #c8e3d5; vertical-align: baseline; }
+.ru-narrative > p, .ru-purpose { color: #a2b7b8; font-size: 13px; line-height: 1.9; margin: 21px 0 0; }
+.ru-purpose strong { color: #d2e3db; font-weight: 500; }
+.ru-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 9px 16px; color: #75978d; font-size: 10px; line-height: 1.8; margin: 22px 0; }
+.ru-meta strong { color: #b5d6c5; font-weight: 500; font-size: 12px; margin-right: 3px; }
+.ru-meta > span { display: inline-flex; gap: 6px; align-items: center; }
+.ru-meta code { font-size: 10px; color: #83a89a; }
+.ru-meta .added, .ru-meta .addition { color: #a4d6b8; }
+.ru-meta .removed, .ru-meta .deletion { color: #c58f91; }
+.ru-link, .ru-action { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: #abdcc6; text-decoration: none; }
+.ru-link { padding: 7px 0; line-height: 1.6; text-align: left; }
+.ru-link:hover { color: #e2f4e7; }
+.ru-action { padding: 10px 16px; border: 1px solid #769c8a55; border-radius: 24px; background: #1734296b; justify-content: center; }
+.ru-action:hover { background: #244937ab; border-color: #8fc9aa99; }
+.ru-action.primary, .ru-action.reviewed { background: #acdec2; border-color: #acdec2; color: #12342a; font-weight: 550; }
+.ru-action.primary:hover, .ru-action.reviewed:hover { background: #c7ead0; color: #102d24; }
+.ru-action > span { min-width: 0; }
+.ru-narrative > .ru-action { margin-top: 23px; }
+.ru-observation { margin: 27px 0 0; }
+.ru-observation > .ru-overline { color: #7a9e96; font-size: 8px; letter-spacing: 1.2px; }
+.ru-observation p { font-size: 12px; color: #acc3bb; margin: 9px 0 0; }
+.ru-observation > strong { font-weight: 500; font-size: 13px; color: #bcd7c8; }
+.ru-fact-nav { display: flex; align-items: center; gap: 11px; margin-top: 16px; color: #688c83; font: 10px ui-monospace, monospace; }
+.ru-fact-nav button { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; padding: 0; color: #9cc9b5; border: 1px solid #658a7e40; border-radius: 50%; }
+.ru-fact-nav button:hover { background: #274b3b5c; }
+.ru-muted, .ru-note { color: #7d9698; font-size: 11px; line-height: 1.8; }
+.ru-narrative > .ru-note { font-size: 10px; line-height: 1.8; color: #6d8c8f; margin-top: 21px; }
+.ru-fine-print { font-size: 10px; color: #6f8b89; line-height: 1.8; margin: 20px 0 0; }
+.ru-narrative > .ru-fine-print { color: #6f8b89; font-size: 10px; line-height: 1.8; margin-top: 24px; }
+.ru-narrative > .ru-map-hint { font-size: 10px; color: #72988b; line-height: 1.8; margin-top: 28px; }
+.ru-note > svg { vertical-align: -3px; margin-right: 6px; }
+.ru-narrative ul, .ru-inspector ul { padding-left: 17px; color: #91aaa7; font-size: 12px; line-height: 1.8; }
+.ru-narrative li + li, .ru-inspector li + li { margin-top: 10px; }
+
+/* Only the object being inspected gets a surface; the map remains visible. */
+.ru-inspector { position: absolute; z-index: 5; top: 70px; right: 0; bottom: 100px; width: var(--ru-inspector-width); display: flex; flex-direction: column; min-height: 0; min-width: 0; background: linear-gradient(115deg, #0b171fec, #0b141df5); border-left: 1px solid #93b9ad26; box-shadow: -24px 0 70px #04090c50; backdrop-filter: blur(18px); }
+.ru-inspector-header { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 15px; padding: 23px 26px 17px; border-bottom: 1px solid var(--ru-line); }
+.ru-inspector-header > div { min-width: 0; }
+.ru-inspector-header .ru-overline { font-size: 8px; letter-spacing: 1.4px; margin-bottom: 7px; }
+.ru-inspector-header h2, .ru-inspector-header h3 { font: 400 23px/1.3 'Iowan Old Style', Georgia, serif; color: #d8e8df; letter-spacing: -.3px; overflow-wrap: anywhere; }
+.ru-inspector-header code { font: 12px/1.7 ui-monospace, monospace; color: #d0e3d8; overflow-wrap: anywhere; }
+.ru-inspector-header > button { display: flex; align-items: center; justify-content: center; width: 29px; height: 29px; border-radius: 50%; color: #829e9c; flex-shrink: 0; }
+.ru-inspector-header > button:hover { background: #29443c7d; color: #d6ebde; }
+.ru-inspector-controls { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.ru-inspector-controls > button { display: flex; align-items: center; justify-content: center; width: 27px; height: 27px; border-radius: 50%; color: #8eafa1; font-size: 21px; }
+.ru-inspector-controls > button:last-child { margin-left: 7px; color: #749084; }
+.ru-inspector-controls > button:hover { color: #d0e5d5; background: #3c64503d; }
+.ru-inspector-scroll { flex: 1; min-width: 0; min-height: 0; overflow: auto; padding: 22px 26px 26px; overscroll-behavior: contain; }
+.ru-inspector-scroll > :first-child { margin-top: 0; }
+.ru-inspector-actions { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 13px; padding: 15px 24px; border-top: 1px solid #76988b25; background: #0a151bd9; }
+.ru-inspector-actions > span { color: #819d96; font-size: 11px; line-height: 1.6; }
+.ru-inspector-actions .ru-action { white-space: nowrap; }
+.ru-file-summary { margin: 0 0 20px; color: #adc6ba; font-size: 13px; line-height: 1.9; }
+.ru-file-summary p { margin: 0 0 10px; }
+.ru-file-summary h3 { font: 500 13px/1.6 Inter, sans-serif; color: #c8dfd0; }
+.ru-file-path { display: block; font-size: 10px; line-height: 1.7; color: #74978a; overflow-wrap: anywhere; margin-bottom: 12px; }
+.ru-file-intro .ru-file-summary { margin-bottom: 10px; }
+.ru-hunks { display: flex; flex-wrap: wrap; gap: 6px 15px; margin-top: 17px; }
+.ru-hunks > button { display: flex; align-items: baseline; gap: 5px; padding: 3px 0; color: #89ae9e; font: 10px/1.6 ui-monospace, monospace; text-align: left; max-width: 100%; overflow-wrap: anywhere; }
+.ru-hunks > button > svg { align-self: center; }
+.ru-hunks > button:hover { color: #cbe4ce; }
+.ru-details { border-top: 1px solid #94b4a621; margin: 23px 0 0; padding: 16px 0 0; }
+.ru-details > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 11px; color: #b1cbbd; line-height: 1.6; }
+.ru-details > summary::-webkit-details-marker { display: none; }
+.ru-details > summary > svg:last-child { margin-left: auto; color: #6f9086; transition: transform .2s; }
+.ru-details[open] > summary > svg:last-child { transform: rotate(180deg); }
+.ru-details > p { margin: 13px 0 0; font-size: 12px; color: #8da9a3; }
+.ru-details > div, .ru-details > label { margin-top: 14px; }
+.ru-details > .ru-overline { margin-top: 18px; font-size: 8px; color: #789b89; }
+.ru-details > small, .ru-details > div > small { display: block; font-size: 10px; line-height: 1.7; color: #708b7d; margin-top: 10px; }
+.ru-details > div > p { font-size: 12px; line-height: 1.8; color: #94afa1; }
+.ru-details code { font-size: 11px; color: #b1cbbf; overflow-wrap: anywhere; }
+.ru-file-orbit { position: absolute; z-index: 3; top: 94px; left: 40px; width: 270px; max-height: calc(100% - 210px); overflow: auto; padding-right: 10px; }
+.ru-file-orbit > h2 { font: 400 32px/1.2 'Iowan Old Style', Georgia, serif; letter-spacing: -.7px; color: #dbe9df; margin: 17px 0 16px; }
+.ru-file-orbit > p { color: #819e96; font-size: 12px; line-height: 1.8; margin: 0 0 18px; }
+.ru-file-orbit > button { display: flex; align-items: center; gap: 10px; text-align: left; min-width: 0; width: 100%; padding: 9px 0; color: #badbc9; font-size: 12px; }
+.ru-file-orbit > button > span { flex: 1; min-width: 0; }
+.ru-file-orbit strong { display: block; font-weight: 500; overflow-wrap: anywhere; }
+.ru-file-orbit code, .ru-file-orbit small { display: block; color: #72948e; font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; margin-top: 6px; }
+.ru-file-orbit > div { display: flex; align-items: center; gap: 11px; color: #71938a; font-size: 10px; }
+.ru-file-orbit > div > button { display: flex; padding: 5px; color: #8bb9a6; }
+.ru-file-picker { position: absolute; z-index: 12; left: 36px; top: 140px; width: min(340px, calc(100% - 72px)); padding: 17px; background: #0c1a22f5; border: 1px solid #789f8f3b; border-radius: 13px; box-shadow: 0 22px 80px #0008; backdrop-filter: blur(20px); }
+.ru-file-picker > label, .ru-file-picker .ru-search { display: flex; align-items: center; gap: 9px; padding: 0 0 12px; border-bottom: 1px solid #668e7c30; color: #7fa595; }
+.ru-file-picker input:not([type=checkbox]) { border: 0; background: transparent; width: 100%; padding: 5px 0; outline: none; border-radius: 0; font-size: 12px; }
+.ru-file-picker > div { max-height: min(380px, 45vh); overflow: auto; padding-top: 8px; }
+.ru-file-picker button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 8px; border-radius: 6px; color: #8eaca4; text-align: left; min-width: 0; }
+.ru-file-picker button > span { min-width: 0; flex: 1; }
+.ru-file-picker > label > button { width: 24px; height: 24px; padding: 0; justify-content: center; color: #819d90; font-size: 20px; }
+.ru-file-picker > div > button { align-items: flex-start; gap: 10px; flex-wrap: wrap; padding-top: 12px; padding-bottom: 12px; }
+.ru-file-picker > div > button > span { flex: 0 0 18px; width: 18px; height: 18px; margin-top: 2px; display: flex; align-items: center; justify-content: center; font: 9px ui-monospace, monospace; color: #6f9680; }
+.ru-file-picker > div > button > span.reviewed { color: #a4cea6; }
+.ru-file-picker > div > button > code { flex: 1; min-width: 0; margin-top: 0; font-size: 11px; color: #b4d0bf; }
+.ru-file-picker > div > button > small { flex-basis: 100%; margin: -5px 0 0 28px; font-size: 9px; color: #6f927e; }
+.ru-file-picker button strong { display: block; color: #c2dbcc; font-size: 12px; font-weight: 500; overflow-wrap: anywhere; }
+.ru-file-picker button code, .ru-file-picker button small { display: block; color: #79978e; font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; margin-top: 4px; }
+.ru-file-picker button.active, .ru-file-picker button.selected, .ru-file-picker button[aria-current=true], .ru-file-picker button:hover { background: #3351434d; color: #d1e5d6; }
+.ru-file-picker > p { color: #78998e; font-size: 11px; }
+
+/* Existing source tools become part of the inspector rather than another box. */
+.review-guide .ru-diff-slot { min-width: 0; margin: 22px -26px 0; border-top: 1px solid var(--ru-line); }
+.review-guide .ru-diff-slot .pr-file-detail { border: 0; border-radius: 0; background: transparent; }
+.review-guide .ru-diff-slot .pr-detail-heading { padding: 14px 25px; min-height: 46px; }
+.review-guide .ru-diff-slot .pr-detail-heading code { font-size: 11px; }
+.review-guide .ru-diff-slot .pr-detail-tabs { padding: 0 25px; background: #0c1a2273; border-color: #76988c21; }
+.review-guide .ru-diff-slot .pr-detail-tabs button { font-size: 11px; padding: 12px 0; }
+.review-guide .ru-diff-slot .pr-detail-tabs button > span { font-size: 10px; }
+.review-guide .ru-diff-slot .pr-detail-snapshot { font-size: 9px; }
+.review-guide .ru-diff-slot .pr-changed-symbols { background: transparent; border-color: #76988c21; }
+.review-guide .ru-diff-slot .pr-changed-symbols summary { font-size: 10px; padding: 12px 25px; }
+.review-guide .ru-diff-slot .pr-changed-symbols > div { padding-left: 25px; padding-right: 25px; }
+.review-guide .ru-diff-slot .pr-symbol { background: #35434538; border-color: #6e8c8940; }
+.review-guide .ru-diff-slot .pr-symbol code, .review-guide .ru-diff-slot .pr-symbol > span { font-size: 10px; }
+.review-guide .ru-diff-slot .pr-diff-scroll { max-height: none; background: #08141bc4; }
+.review-guide .ru-diff-slot .pr-diff-table { font-size: 12px; line-height: 1.85; }
+.review-guide .ru-diff-slot .pr-diff-line .pr-line-number { min-width: 38px; width: 38px; font-size: 10px; }
+.review-guide .ru-diff-slot .pr-diff-hunk td { font-size: 10px; padding: 10px 16px; background: #18303d94; }
+.review-guide .ru-diff-slot .pr-connections { padding: 19px 25px; }
+.review-guide .ru-diff-slot .pr-connections-intro > p, .review-guide .ru-diff-slot .pr-inline-note { font-size: 11px; }
+.review-guide .ru-diff-slot .pr-connection { background: transparent; border: 0; border-top: 1px solid #78978826; padding: 16px 0; margin: 0; border-radius: 0; }
+.review-guide .ru-diff-slot .pr-connection-route code { font-size: 11px; }
+.review-guide .ru-diff-slot .pr-connection-meta, .review-guide .ru-diff-slot .pr-evidence-link code { font-size: 10px; }
+.review-guide .ru-diff-slot .pr-source-path > code, .review-guide .ru-diff-slot .pr-source-lines { font-size: 11px; }
+.review-guide .ru-diff-slot .pr-panel-state { font-size: 12px; }
+.review-guide .ru-diff-slot .pr-panel-state > span { font-size: 11px; }
+
+/* Evidence is a quiet source trail. Watchpoints are annotations, never alert cards. */
+.rg-evidence { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 5px 12px; margin-top: 10px; }
+.rg-evidence button, .rg-evidence a, .rg-evidence-location { display: inline-flex; align-items: center; gap: 6px; padding: 3px 0; color: #92bca9; text-decoration: none; text-align: left; min-width: 0; max-width: 100%; }
+.rg-evidence button:hover, .rg-evidence a:hover { color: #d7eddb; }
+.rg-evidence code { font-size: 10px; overflow-wrap: anywhere; min-width: 0; line-height: 1.6; }
+.rg-evidence button > span, .rg-evidence a > span, .rg-evidence-location > span { font: 8px ui-monospace, monospace; color: #668b7e; }
+.rg-evidence.compact { margin-top: 7px; }
+.rg-evidence.compact code { font-size: 10px; }
+.rg-watchpoints { margin: 25px 0 0; padding: 0; }
+.rg-watchpoints h3 { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 500; color: #c9b985; }
+.rg-watchpoints h3 svg { color: #ab986d; }
+.rg-watchpoint { padding: 14px 0 0; }
+.rg-watchpoint + .rg-watchpoint { margin-top: 14px; border-top: 1px solid #a2946424; }
+.rg-watchpoint > strong { display: block; color: #c6c8ac; font-size: 12px; font-weight: 500; margin-bottom: 5px; }
+.rg-watchpoint > p { font-size: 12px; color: #95aaa0; margin: 0; line-height: 1.8; }
+
+.ru-form { display: flex; flex-direction: column; gap: 10px; margin-top: 23px; font-size: 11px; color: #a8c0b0; line-height: 1.7; }
+.ru-form > label { display: flex; flex-direction: column; gap: 8px; color: #9db9ab; font-size: 11px; }
+.ru-form > label > span { color: #819e93; font-size: 10px; line-height: 1.7; }
+.ru-form h3 { font-size: 13px; color: #c2d9cb; font-weight: 500; }
+.ru-form p { margin: 0; color: #8aa69e; font-size: 11px; }
+.ru-check, .ru-form > .ru-check { display: flex; flex-direction: row; align-items: flex-start; gap: 9px; font-size: 11px; line-height: 1.7; color: #a1bdb0; }
+.ru-check > span { font: inherit; color: inherit; }
+.ru-check { margin-top: 14px; }
+.ru-test-summary > p { font-size: 13px; line-height: 1.8; color: #a4bcb0; margin: 15px 0 22px; }
+.ru-unverified { display: inline-flex; align-items: center; gap: 7px; font-size: 10px; color: #b7ac80; }
+.ru-coverage-assessment { margin: 27px 0 30px; }
+.ru-coverage-assessment > .ru-overline { color: #96b39b; font-size: 8px; letter-spacing: 1.3px; }
+.ru-coverage-assessment > h4 { margin: 11px 0 12px; color: #d2e0cc; font: 400 24px/1.35 'Iowan Old Style', Georgia, serif; letter-spacing: -.25px; }
+.ru-coverage-assessment > p { margin: 0; color: #97b09e; font-size: 12px; line-height: 1.85; }
+.ru-coverage-checks { border-top: 1px solid #b9ab6526; padding-top: 21px; margin: 0 0 29px; }
+.ru-coverage-checks > h4, .ru-covered-scenarios > h4 { margin: 0 0 15px; font-size: 12px; font-weight: 500; line-height: 1.6; }
+.ru-coverage-checks > h4 { color: #cabc8c; }
+.ru-coverage-checks > p { position: relative; padding-left: 13px; margin: 12px 0; color: #a2ad93; font-size: 12px; line-height: 1.8; }
+.ru-coverage-checks > p::before { content: ''; position: absolute; left: 0; top: 9px; width: 3px; height: 3px; border-radius: 50%; background: #b8a971; }
+.ru-coverage-checks > div { margin-top: 19px; }
+.ru-coverage-checks > div > strong { display: block; color: #c2c7ac; font-size: 12px; font-weight: 500; line-height: 1.7; }
+.ru-coverage-checks > div > p { margin: 6px 0 0; color: #93a594; font-size: 12px; line-height: 1.8; }
+.ru-covered-scenarios { margin: 29px 0; }
+.ru-covered-scenarios > h4 { color: #bfd4bd; }
+.ru-test-scenario { margin: 0; padding: 0; }
+.ru-test-scenario > summary { padding: 14px 0; gap: 10px; color: #b6cbb7; line-height: 1.65; }
+.ru-test-scenario > summary > .ru-change { flex-shrink: 0; min-width: 48px; font-size: 8px; letter-spacing: .8px; }
+.ru-test-scenario > summary > span:nth-child(2) { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 12px; }
+.ru-test-scenario > summary > svg:last-child { margin-left: 3px; }
+.ru-test-scenario > summary:hover { color: #d9e7d0; }
+.ru-test-scenario[open] { padding-bottom: 19px; }
+.ru-test-scenario[open] > summary { color: #d1e0c7; padding-bottom: 7px; }
+.ru-test-scenario > p { color: #91ab98; margin-top: 7px; line-height: 1.85; }
+.ru-test-scenario > .rg-evidence { margin-top: 10px; }
+.ru-test-example { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0 0; border-top: 1px solid #8ca48b19; }
+.ru-test-example > code { flex: 1; min-width: 0; color: #a6c1b3; font-size: 10px; line-height: 1.85; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ru-test-example > code:last-child { color: #b8cea7; }
+.ru-test-example > svg { color: #789b7c; margin-top: 4px; }
+.ru-test-scenario > .ru-assertion { padding-top: 12px; }
+.ru-test-list > div { border-top: 1px solid #9ab39b22; padding: 15px 0; }
+.ru-test-list > div > code { display: block; margin-top: 8px; font-size: 11px; color: #bbd2bd; overflow-wrap: anywhere; line-height: 1.7; }
+.ru-change { font-size: 8px; color: #8fa291; text-transform: uppercase; letter-spacing: 1.1px; }
+.ru-change.added { color: #96c49b; }
+.ru-change.removed, .ru-change.deleted { color: #bd9290; }
+.ru-test-list > p { font-size: 12px; color: #8ea494; }
+.ru-test-gaps { margin: 26px 0; padding-top: 20px; border-top: 1px solid #b9ab6526; }
+.ru-test-gaps h4 { color: #c5b580; font-weight: 500; font-size: 12px; margin: 0 0 11px; }
+.ru-test-gaps p { font-size: 12px; color: #9daa91; line-height: 1.8; margin: 11px 0 0; }
+.ru-assertion { padding-top: 15px; border-top: 1px solid #8ca48b23; }
+.ru-assertion > small { display: block; color: #79957b; font-size: 9px; margin-bottom: 7px; }
+.ru-assertion > code { display: block; white-space: pre-wrap; line-height: 1.7; overflow-wrap: anywhere; }
+.ru-question { margin-top: 24px; }
+.ru-question h3 { font: 400 24px/1.4 'Iowan Old Style', Georgia, serif; letter-spacing: -.35px; color: #d6e6db; }
+.ru-question > p { font-size: 12px; color: #8ca89f; margin: 13px 0 0; }
+.ru-question-dots { display: flex; align-items: center; gap: 9px; margin: 25px 0 21px; }
+.ru-question-dots > button { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; padding: 0; color: #5f897c; border: 1px solid #64887840; border-radius: 50%; font: 9px ui-monospace, monospace; }
+.ru-question-dots > button.active { border-color: #8fd0ac; color: #c8e7d1; box-shadow: 0 0 12px #6db89518; }
+.ru-question-dots > button.yes { background: #3c604544; color: #9cccaa; }
+.ru-question-dots > button.no { border-color: #ad7b6f80; color: #d8a48c; }
+.ru-question-dots > button.unsure { border-color: #aa965580; color: #cfb86f; }
+.ru-answer-choices { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.ru-answer-choices > button { display: inline-flex; align-items: center; gap: 7px; border: 1px solid #6b917a55; padding: 9px 13px; border-radius: 22px; color: #9bb7a9; font-size: 11px; }
+.ru-answer-choices > button:hover { border-color: #98bb9d9c; color: #d6e7cf; background: #33553e40; }
+.ru-answer-choices > button.selected { background: #416c4d61; border-color: #91bc85; color: #deedce; }
+.ru-answer-choices > button.no.selected, .ru-question.no .ru-answer-choices > button.selected { background: #613d303d; border-color: #a47b5a; color: #e3c0a0; }
+.ru-answer-choices > button.unsure.selected, .ru-question.unsure .ru-answer-choices > button.selected { background: #69603a38; border-color: #a79c6c; color: #d8d0a3; }
+.ru-question .ru-form { margin-top: 18px; }
+.ru-narrative .ru-question-title { font-size: 29px; line-height: 1.35; letter-spacing: -.5px; }
+.ru-verdict { display: flex; align-items: center; gap: 16px; margin: 27px 0 20px; color: #d5bc81; }
+.ru-verdict > svg, .ru-verdict-beacon { width: 48px; height: 48px; padding: 12px; border: 1px solid #bdab625c; border-radius: 50%; box-shadow: 0 0 36px #bb9a3f14; }
+.ru-verdict.ready { color: #b2dfa5; }
+.ru-verdict.ready > svg, .ru-verdict.ready .ru-verdict-beacon { border-color: #a1d79470; box-shadow: 0 0 36px #94c97a18; }
+.ru-verdict.changes_requested { color: #d9aa92; }
+.ru-verdict.changes_requested > svg, .ru-verdict.changes_requested .ru-verdict-beacon { border-color: #c1937960; }
+.ru-narrative > .ru-verdict-beacon { position: relative; display: flex; align-items: center; justify-content: center; color: #c0ae7a; width: 56px; height: 56px; margin: 24px 0; padding: 0; }
+.ru-verdict-beacon > span { position: absolute; inset: -6px; border: 1px solid #aa956825; border-radius: 50%; transform: rotate(-25deg) scaleY(.65); }
+.ru-narrative > .ru-verdict-beacon.ready { border-color: #8dbd8c80; color: #aad0a1; box-shadow: 0 0 36px #80b27420; }
+.ru-narrative > .ru-verdict-beacon.changes_requested { border-color: #bd8a6f80; color: #d6a88b; }
+.ru-verdict-progress { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 10px; color: #93b193; margin: 21px 0; line-height: 1.7; }
+.ru-verdict strong { display: block; font: 400 24px/1.3 'Iowan Old Style', Georgia, serif; }
+.ru-verdict small { display: block; font-size: 10px; line-height: 1.7; margin-top: 6px; color: #8b9f8d; }
+.ru-reasons { display: flex; flex-direction: column; margin: 24px 0; }
+.ru-reasons > button { display: flex; gap: 10px; align-items: flex-start; text-align: left; border-bottom: 1px solid #91a98d21; padding: 13px 0; color: #bcbd98; }
+.ru-reasons > button > svg { margin-top: 4px; color: #b4a77a; }
+.ru-reasons > button { font-size: 11px; line-height: 1.7; align-items: center; }
+.ru-reasons > button > span { width: 4px; height: 4px; border-radius: 50%; background: #b5a46b; flex-shrink: 0; }
+.ru-reasons > button > svg { margin-top: 0; margin-left: auto; color: #78957a; }
+.ru-reasons strong { display: block; color: #c7d0ba; font-size: 12px; font-weight: 500; }
+.ru-reasons small { display: block; color: #8da192; font-size: 11px; line-height: 1.7; margin-top: 4px; }
+.ru-reasons > button:hover strong { color: #e1e7cf; }
+.ru-copy-status { position: absolute; z-index: 14; bottom: 90px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 40px); padding: 12px 18px; background: #153126ef; border: 1px solid #75a78360; border-radius: 25px; color: #b0d9b3; font-size: 11px; line-height: 1.7; box-shadow: 0 8px 30px #0004; }
+.review-guide .ru-copy-fallback { position: absolute; z-index: 13; left: 50%; top: 18%; width: min(640px, calc(100% - 48px)); padding: 37px 20px 20px; transform: translateX(-50%); border: 1px solid #87ad8b55; border-radius: 13px; background: #0e1f22fa; box-shadow: 0 30px 90px #0009; }
+.ru-copy-fallback > button { position: absolute; right: 12px; top: 6px; font-size: 24px; color: #90b59a; }
+.ru-copy-fallback > textarea { font: 11px/1.7 ui-monospace, monospace; min-height: 220px; max-height: 55vh; }
+.ru-save-status { position: absolute; z-index: 2; bottom: 22px; left: 30px; font-size: 8px; color: #577d6d; pointer-events: none; }
+
+/* A compact flight path, not a page-wide wizard. */
+.ru-dock { position: absolute; z-index: 10; left: 50%; bottom: 21px; transform: translateX(-50%); display: flex; align-items: center; gap: 15px; max-width: calc(100% - 48px); padding: 9px 10px 9px 13px; border: 1px solid #8fb09d30; border-radius: 40px; background: #0c1b22df; box-shadow: 0 7px 40px #0006, inset 0 1px 0 #a3c3b309; backdrop-filter: blur(22px); }
+.ru-path { display: flex; align-items: center; gap: 5px; }
+.ru-path > button { display: flex; align-items: center; gap: 8px; padding: 7px 9px; color: #6c8e88; border-radius: 22px; font-size: 10px; white-space: nowrap; }
+.ru-path > button > span:first-child { display: flex; align-items: center; justify-content: center; width: 21px; height: 21px; border: 1px solid #66897942; border-radius: 50%; font: 9px ui-monospace, monospace; color: #688f80; }
+.ru-path > button.active { background: #37564742; color: #d5e8d6; }
+.ru-path > button.active > span:first-child { border-color: #a8d4b1aa; color: #c8e5cb; box-shadow: 0 0 13px #94c5a02b; }
+.ru-path > button.complete > span:first-child { background: #2e553c66; border-color: #739e7666; color: #a5d1a6; }
+.ru-path > button:not(.active):hover { color: #bedbc7; }
+.ru-continue { display: flex; align-items: center; justify-content: center; gap: 9px; background: #afd9b8; color: #19352a; border-radius: 25px; padding: 10px 15px; min-height: 37px; font-size: 10px; white-space: nowrap; }
+.ru-continue:hover { background: #c6e7ca; color: #102a21; }
+.ru-dock > .ru-link { font-size: 10px; white-space: nowrap; }
+.ru-loading { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 17px; padding: 40px; color: #9fc4b0; text-align: center; background: radial-gradient(ellipse at 55% 50%, #15332970, transparent 65%); }
+.ru-loading h2 { font: 400 32px/1.3 'Iowan Old Style', Georgia, serif; letter-spacing: -.6px; color: #d8e5d6; }
+.ru-loading p { max-width: 460px; color: #86a399; font-size: 13px; margin: 0; }
+
+@media (min-width: 1650px) {
+  .review-guide.ru-workspace { --ru-inspector-width: min(53%, 840px); }
+  .ru-toolbar { left: 45px; right: 38px; }
+  .ru-narrative { left: 48px; top: 112px; width: 330px; }
+  .ru-file-orbit { left: 48px; top: 108px; width: 300px; }
+  .ru-narrative h2 { font-size: 43px; }
+  .ru-narrative-brief h2 { font-size: 36px; }
+  .ru-purpose { font-size: 14px; }
+  .ru-inspector-scroll { padding: 26px 32px 30px; }
+  .review-guide .ru-diff-slot { margin-left: -32px; margin-right: -32px; }
+}
+@media (max-width: 1200px) {
+  .review-guide.ru-workspace { --ru-inspector-width: 55%; }
+  .ru-toolbar { left: 28px; right: 23px; }
+  .ru-narrative { left: 30px; width: 265px; top: 90px; }
+  .ru-file-orbit { left: 30px; width: 245px; top: 90px; }
+  .ru-narrative h2 { font-size: 32px; }
+  .ru-narrative > p, .ru-purpose { font-size: 12px; }
+  .ru-inspector-header { padding: 20px 22px 16px; }
+  .ru-inspector-scroll { padding: 20px 22px 24px; }
+  .review-guide .ru-diff-slot { margin-left: -22px; margin-right: -22px; }
+  .ru-inspector-actions { padding: 14px 20px; }
+  .ru-dock { gap: 9px; padding-left: 8px; }
+  .ru-path { gap: 1px; }
+  .ru-path > button { gap: 6px; padding: 7px; }
+}
+@media (max-width: 1000px) {
+  .review-guide.ru-workspace { --ru-inspector-width: 57%; }
+  .ru-narrative { left: 25px; width: 235px; }
+  .ru-file-orbit { left: 25px; width: 220px; }
+  .ru-file-orbit > h2 { font-size: 28px; }
+  .review-guide.ru-workspace::before { width: 370px; }
+  .ru-narrative h2 { font-size: 29px; }
+  .ru-inspector-header { padding: 18px; }
+  .ru-inspector-scroll { padding: 18px; }
+  .review-guide .ru-diff-slot { margin-left: -18px; margin-right: -18px; }
+  .review-guide .ru-diff-slot .pr-detail-heading, .review-guide .ru-diff-slot .pr-detail-tabs { padding-left: 18px; padding-right: 18px; }
+  .ru-inspector-actions { padding: 13px 17px; gap: 10px; }
+  .ru-inspector-actions > span { font-size: 10px; }
+  .ru-action { font-size: 10px; padding: 9px 12px; }
+  .ru-path > button { gap: 5px; font-size: 9px; padding: 6px; }
+  .ru-path > button > span:first-child { width: 20px; height: 20px; }
+  .ru-continue { font-size: 9px; padding: 9px 12px; }
+  .ru-save-status { display: none; }
+}
+@media (max-height: 760px) and (min-width: 801px) {
+  .ru-narrative { top: 80px; max-height: calc(100% - 180px); }
+  .ru-file-orbit { top: 80px; max-height: calc(100% - 180px); }
+  .ru-narrative h2 { font-size: 30px; }
+  .ru-narrative > p, .ru-purpose { margin-top: 16px; line-height: 1.8; }
+  .ru-meta { margin: 16px 0; }
+  .ru-observation { margin-top: 20px; }
+  .ru-dock { bottom: 16px; }
+  .ru-inspector { bottom: 88px; }
+}
+@media (max-width: 800px) {
+  .review-guide.ru-workspace { display: flex; flex-direction: column; overflow: auto; min-height: 580px; padding-top: 42vh; padding-bottom: 90px; }
+  .review-guide.ru-workspace::before { top: 28vh; bottom: auto; width: 100%; height: 18vh; background: linear-gradient(0deg, #080f15, #080f1500); }
+  .review-guide.ru-workspace::after { display: none; }
+  .ru-toolbar { top: 18px; left: 22px; right: 22px; gap: 12px; }
+  .ru-scope-label { gap: 10px; }
+  .ru-overline { font-size: 8px; letter-spacing: 1.5px; }
+  .ru-revisions > button { font-size: 9px; padding: 5px 9px; }
+  .ru-narrative { position: relative; top: auto; left: auto; width: auto; max-height: none; overflow: visible; margin: 0; padding: 16px 27px 32px; }
+  .ru-narrative > .ru-overline { margin-bottom: 13px; }
+  .ru-narrative h2 { font-size: 34px; max-width: 540px; }
+  .ru-narrative h2 .ru-title-code { font-size: 22px; }
+  .ru-narrative > p, .ru-purpose { font-size: 13px; max-width: 570px; margin-top: 17px; }
+  .ru-narrative > .ru-note { font-size: 11px; max-width: 540px; }
+  .ru-meta { margin: 18px 0; }
+  .ru-observation { margin-top: 23px; max-width: 560px; }
+  .ru-observation p { font-size: 13px; }
+  .ru-inspector { position: relative; right: auto; top: auto; bottom: auto; width: 100%; max-height: none; min-height: 0; flex: 0 0 auto; border-left: 0; border-top: 1px solid #96b8a82b; box-shadow: none; background: #0b171fe0; }
+  .ru-inspector-header { padding: 22px 27px 18px; }
+  .ru-inspector-scroll { overflow: visible; padding: 24px 27px 28px; }
+  .ru-inspector-actions { padding: 17px 27px; }
+  .ru-inspector-actions > span { font-size: 11px; }
+  .ru-file-summary { font-size: 13px; }
+  .ru-file-orbit { position: relative; top: auto; left: auto; width: auto; max-height: none; max-width: 600px; margin: 0; padding: 15px 27px 27px; }
+  .ru-file-orbit > h2 { font-size: 32px; }
+  .ru-file-orbit > p { font-size: 12px; }
+  .ru-file-picker { position: absolute; left: 23px; top: calc(42vh + 70px); width: min(390px, calc(100% - 46px)); }
+  .ru-file-picker > div { max-height: 330px; }
+  .review-guide .ru-diff-slot { margin-left: -27px; margin-right: -27px; }
+  .review-guide .ru-diff-slot .pr-detail-heading, .review-guide .ru-diff-slot .pr-detail-tabs { padding-left: 27px; padding-right: 27px; }
+  .review-guide .ru-diff-slot .pr-diff-scroll { max-height: 580px; }
+  .ru-dock { position: fixed; bottom: 14px; max-width: calc(100% - 24px); padding: 7px 8px; gap: 7px; }
+  .ru-path { gap: 2px; }
+  .ru-path > button { padding: 5px 6px; font-size: 9px; gap: 5px; }
+  .ru-path > button > span:first-child { width: 20px; height: 20px; font-size: 8px; }
+  .ru-continue { padding: 9px 12px; font-size: 10px; }
+  .ru-action { font-size: 11px; }
+  .ru-question { max-width: 560px; }
+  .ru-question h3 { font-size: 27px; }
+  .ru-narrative .ru-question-title { font-size: 29px; max-width: 530px; }
+  .ru-answer-choices > button { font-size: 12px; }
+  .ru-reasons { max-width: 570px; }
+  .ru-loading { position: relative; min-height: 300px; padding: 30px 25px; }
+  .ru-copy-status { position: fixed; bottom: 90px; }
+  .review-guide .ru-copy-fallback { position: fixed; }
+}
+@media (max-width: 600px) {
+  .ru-toolbar { left: 20px; right: 20px; }
+  .ru-scope-label .ru-progress-fraction { display: none; }
+  .ru-narrative { padding-left: 22px; padding-right: 22px; }
+  .ru-file-orbit { padding-left: 22px; padding-right: 22px; }
+  .ru-narrative h2 { font-size: 32px; }
+  .ru-revisions { padding: 3px; }
+  .ru-revisions > button { font-size: 8px; padding: 5px 8px; }
+  .ru-inspector-header, .ru-inspector-scroll { padding-left: 22px; padding-right: 22px; }
+  .ru-inspector-actions { padding: 16px 22px; }
+  .review-guide .ru-diff-slot { margin-left: -22px; margin-right: -22px; }
+  .review-guide .ru-diff-slot .pr-detail-heading, .review-guide .ru-diff-slot .pr-detail-tabs { padding-left: 22px; padding-right: 22px; }
+  .review-guide .ru-diff-slot .pr-diff-table { font-size: 11px; }
+  .review-guide .ru-diff-slot .pr-diff-line .pr-line-number { min-width: 30px; width: 30px; font-size: 9px; padding: 0 5px; }
+  .review-guide .ru-diff-slot .pr-diff-line .pr-line-sign { padding: 0 6px; width: 20px; }
+  .ru-dock { width: calc(100% - 24px); justify-content: space-between; border-radius: 30px; gap: 5px; }
+  .ru-path { flex: 1; justify-content: space-between; gap: 0; }
+  .ru-path > button { flex-direction: column; gap: 5px; padding: 3px 4px; font-size: 8px; min-width: 36px; }
+  .ru-path > button.active { background: transparent; }
+  .ru-path > button > span:first-child { width: 21px; height: 21px; }
+  .ru-continue { width: 33px; height: 33px; min-height: 33px; padding: 8px; font-size: 0; gap: 0; flex-shrink: 0; }
+  .ru-continue > span { display: none; }
+  .ru-dock > .ru-link { display: none; }
+}
+@media (max-width: 380px) {
+  .ru-toolbar { left: 16px; right: 16px; }
+  .ru-overline { font-size: 7px; letter-spacing: 1.2px; }
+  .ru-revisions > button { padding: 5px 6px; }
+  .ru-narrative { padding-left: 18px; padding-right: 18px; }
+  .ru-file-orbit { padding-left: 18px; padding-right: 18px; }
+  .ru-narrative h2 { font-size: 29px; }
+  .ru-inspector-header, .ru-inspector-scroll, .ru-inspector-actions { padding-left: 18px; padding-right: 18px; }
+  .review-guide .ru-diff-slot { margin-left: -18px; margin-right: -18px; }
+  .ru-inspector-actions { flex-wrap: wrap; }
+  .ru-inspector-actions > span { flex: 1; }
+  .ru-path > button { min-width: 32px; font-size: 7px; padding-left: 2px; padding-right: 2px; }
+  .ru-dock { max-width: calc(100% - 16px); width: calc(100% - 16px); padding: 7px 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .review-guide *, .review-guide *::before, .review-guide *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+}

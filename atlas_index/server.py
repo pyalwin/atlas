@@ -4,6 +4,7 @@ import json
 import mimetypes
 import re
 import sqlite3
+import threading
 from contextlib import closing
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -12,6 +13,8 @@ from urllib.parse import parse_qs, unquote, urlsplit
 from .indexer import DEFAULT_DB, MAX_FILE_BYTES, safe_source
 from .product import ProductStore
 from .projects import ProjectRegistry
+from .review import ReviewStore
+from .review_ci import get_ci
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 LOCAL_ORIGIN = re.compile(r'^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$')
@@ -139,7 +142,8 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
     data_dir = data_dir or Path(db_path).parent
     registry = registry or ProjectRegistry(data_dir=data_dir, legacy_db=db_path,
                                            **({'legacy_map': taxonomy_path} if taxonomy_path else {}))
-    stores, product_stores = {}, {}
+    stores, product_stores, review_stores = {}, {}, {}
+    review_lock = threading.Lock()
     dist = (Path(dist) if dist else PROJECT_ROOT / 'dist').resolve()
 
     def selected(identity):
@@ -157,6 +161,14 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
             stores[key] = GraphStore(paths['db'])
             product_stores[key] = ProductStore(stores[key], taxonomy_path=paths['map'], cache_path=paths['cache'])
         return project, stores[key], product_stores[key]
+
+    def reviews(identity):
+        project, _, _ = selected(identity)
+        with review_lock:
+            if project['id'] not in review_stores:
+                directory = registry.paths(project['id'])['db'].parent / 'reviews' / project['id']
+                review_stores[project['id']] = ReviewStore(project['path'], directory)
+            return review_stores[project['id']]
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, fmt, *args):
@@ -259,6 +271,26 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
             query = parse_qs(request.query, keep_blank_values=True)
             value = lambda name, default='': query.get(name, [default])[0]
             route = request.path
+            if route in {'/api/review', '/api/review/options', '/api/review/diff', '/api/review/source', '/api/review/guide', '/api/review/ci'}:
+                review = reviews(value('project'))
+                if route == '/api/review':
+                    self.send(200, review.get())
+                elif route == '/api/review/options':
+                    self.send(200, review.options())
+                elif route == '/api/review/diff':
+                    self.send(200, review.diff(value('path'), value('review') or None))
+                elif route == '/api/review/guide':
+                    self.send(200, review.guide(value('review') or None))
+                elif route == '/api/review/ci':
+                    self.send(200, get_ci(review, value('review')))
+                else:
+                    line = None
+                    if 'line' in query:
+                        if not re.fullmatch(r'[1-9]\d*', value('line')):
+                            raise ValueError('Line must be a positive whole number within this snapshot file.')
+                        line = int(value('line'))
+                    self.send(200, review.source(value('path'), value('side', 'head'), line, value('review') or None))
+                return
             if route == '/api/projects':
                 self.send(200, registry.list())
                 return
@@ -325,7 +357,15 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
         do_PUT = mutate
 
         def write(self, body):
-            route = urlsplit(self.path).path
+            request = urlsplit(self.path)
+            route = request.path
+            if route == '/api/review':
+                if self.command != 'POST':
+                    self.send(405, {'error': 'Use POST to create a review scope.'})
+                    return
+                query = parse_qs(request.query, keep_blank_values=True)
+                self.send(202, reviews(query.get('project', [''])[0]).start(body))
+                return
             if route == '/api/projects' and self.command == 'POST':
                 if any(key not in {'path', 'name'} for key in body):
                     raise ValueError('Register a project with path and optional name.')
@@ -350,6 +390,8 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
 
     class LocalServer(ThreadingHTTPServer):
         def server_close(self):
+            for review in review_stores.values():
+                review.close()
             registry.close()
             super().server_close()
 

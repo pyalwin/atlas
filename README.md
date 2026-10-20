@@ -57,6 +57,36 @@ Unassigned files remain available in the technical view. Two features using the 
 
 Large technical spaces show a bounded selection of children and links. Search can find items outside that selection. Product groupings and spatial positions help navigation; they do not establish ownership, deployment boundaries, or execution order.
 
+## Review a pull request
+
+Choose **PR review** in the top bar, then enter a GitHub pull request URL or number for the selected repository. You can also compare two local Git refs, such as `main` and a feature branch.
+
+Review starts in the code universe. A small navigation dock moves through five lenses, while selecting a file opens its diff alongside the map:
+
+1. **Change:** purpose and impact together, with a concise summary and a constellation of changed definitions and sampled calls. Before, Changes, and After share stable positions; select a connection to inspect its source evidence.
+2. **Files:** file explanations and an explanation beside each diff block. Add a local inline comment at a source line or turn a suggested review concern into a comment draft; unresolved comments feed into the verdict.
+3. **Tests:** written scenarios, assertions, gaps to assess, and GitHub Actions results for the pinned head commit. Record validation evidence separately from judging whether the tests are sufficient.
+4. **Questions:** source-grounded choices and short reflections that check understanding of changed behavior. Answers are compared with the evidence; reflections require the reviewer’s own assessment.
+5. **Verdict:** a local recommendation based on reviewed files, open comments, understanding, and recorded validation. Failed or pending CI results require attention. It does not submit a review to GitHub.
+
+The universe focuses on implementation and its connected code, then minimizes in Tests, Questions, and Verdict to give those tasks room. Test files remain available in the Tests view and file navigator, including their diffs, but do not appear as worlds in the impact map. A dedicated test universe is a future extension. Inline comments remain local drafts; Atlas does not publish them.
+
+Explanations are generated from the compared source, diff, and static references without a model call. Authored intent is distinguished from observed code changes. The connections show references rather than proven execution order; unsupported languages fall back to diff evidence. Changed tests are not presented as passed tests, measured coverage, or evidence that behavior is correct. Atlas does not run repository code during review.
+
+CI uses read-only GitHub API requests for workflow runs and check runs associated with the exact head SHA. The repository must match the selected project's GitHub origin. Atlas tries the public API and can fall back to existing `gh` authentication; unavailable access, rate limits, and incomplete results are disclosed. It does not rerun workflows, download logs or coverage artifacts, or inspect required-check rules. Results from a separate merge commit are not substituted.
+
+Passing CI does not establish measured coverage or test sufficiency. Skipped checks remain visible, and PR-target workflows may validate metadata or base-branch logic. A reviewer explicitly chooses whether to use available passing results as validation evidence; Atlas does not automatically record a passing review.
+
+The author-agent panel prepares a question with the review's exact revisions and file context for copying. Claude/Codex connectors and two-way chat are future extensions; no agent is connected and nothing is sent automatically.
+
+Atlas compares the merge base with the proposed head commit, matching the scope of a pull request even when its target branch has moved ahead. It builds separate indexes for those snapshots, leaving the working tree and the project's ordinary index intact. Uncommitted changes are not included. Removed code and connections remain reviewable from the base snapshot.
+
+Loading a GitHub PR uses the selected checkout's GitHub `origin` and downloads the required refs. A PR from a different repository must be opened in that repository's Atlas project. Local comparisons need both refs and enough shared history to resolve a merge base.
+
+Completed reviews and their snapshot indexes are cached locally under the project's `reviews/` directory. Returning to PR review restores the latest completed scope. Reviewer answers and notes are scoped to the project, review, exact commits, and guide version in the browser; file checkmarks are saved on the device for that exact comparison. A new comparison does not inherit approval. In shallow checkouts, PR loading fetches up to 200 commits of history; if the common ancestor is older, fetch additional history before retrying.
+
+Connections describe static source references, not proven runtime effects. The graph focuses on direct neighbors of changed files; it does not claim to enumerate every transitive consequence. Parser coverage, skipped files, and bounded results are disclosed in the review. The existing language and filename exclusions also apply to snapshot analysis.
+
 ## Keep a project current
 
 Use the project's refresh action to rebuild its index. The old graph stays readable while an existing project is rebuilding; a completed index replaces it atomically.
@@ -149,8 +179,17 @@ All write requests require an `application/json` object body, including `{}` for
 | `GET /api/product/graph?parent=…` | Product universe, capabilities, or implementation roots. |
 | `GET /api/product/node?id=…` | Product description, direct connections, foundations, and source roots. |
 | `GET /api/product/status` | Mapped, excluded, and unassigned file coverage. |
+| `GET /api/review/options` | Available Git refs, comparison defaults, and GitHub repository identity. |
+| `POST /api/review` with `{pr}` or `{base,head}` | Queue a PR or local-ref comparison for the selected project. |
+| `GET /api/review` | Latest review job and completed comparison, including changed files and impact graph. |
+| `GET /api/review/guide?review=…` | Cached, versioned review brief, impact evidence, file explanations, test evidence, and reviewer questions for an immutable comparison. |
+| `GET /api/review/ci?review=…` | Read-only GitHub workflow and check results for the comparison's exact head SHA. `review` is required; returns scope, status, timestamp, results, and limitations. |
+| `GET /api/review/diff?path=…` | Bounded diff for one changed file in the completed comparison. |
+| `GET /api/review/source?path=…&side=base\|head&line=…` | Source evidence from a compared commit. |
 
-Append `project=<id>` to graph, status, product, search, and source requests to select a saved project explicitly. Otherwise they use the active project. Background jobs expose `queued`, `running`, `complete`, or `error` states through the project record.
+Append `project=<id>` to graph, status, product, search, source, and review requests to select a saved project explicitly. Otherwise they use the active project. Background project jobs expose `queued`, `running`, `complete`, or `error` states through the project record; review jobs are reported by the review endpoint.
+
+Pass `review=<id>` from the completed review response to review guide, diff, and source requests to keep them tied to that immutable comparison while another job runs. CI requests require this parameter and reject a missing or mismatched scope.
 
 Technical edge weights count distinct evidence locations. Product edge weights count distinct source-target-kind relationships; `referenceSites` counts their evidence locations. Product responses include relationship-type counts and up to five source-and-target proof samples. Projection caches are invalidated by source-index timestamp, map content hash, and projection version.
 

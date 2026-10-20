@@ -9,7 +9,8 @@
     "index": "node scripts/python.mjs -m atlas_index index",
     "serve": "node scripts/python.mjs -m atlas_index serve --port 4318",
     "build": "vite build",
-    "test": "node scripts/python.mjs -m unittest discover -s tests -v"
+    "test": "node scripts/python.mjs -m unittest discover -s tests -v && npm run test:review",
+    "test:review": "node --test tests/review-verdict.test.mjs tests/review-universe.test.mjs tests/inline-review.test.mjs"
   },
   "dependencies": {
     "@babel/parser": "^7.28.5",

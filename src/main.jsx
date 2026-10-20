@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, Braces, Check, ChevronRight, CircleHelp, Code2, Compass, Copy, FileCode2, Folder, GitBranch, Globe2, Layers3, Link2, List, Loader2, Maximize2, Minimize2, Minus, Orbit, PanelLeft, PanelRight, Pause, Play, Plus, Search, Sparkles, X } from 'lucide-react';
 import { Universe } from './Universe.js';
 import { ProjectManager } from './ProjectManager.jsx';
+import { PRReview } from './PRReview.jsx';
 import './styles.css';
 
 const number = value => new Intl.NumberFormat('en').format(value || 0);
@@ -63,6 +64,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mode, setMode] = useState(new URLSearchParams(location.search).get('view') === 'technical' || /^(dir|foundation):/.test(new URLSearchParams(location.search).get('space') || '') ? 'technical' : 'product');
+  const [reviewOpen, setReviewOpen] = useState(new URLSearchParams(location.search).get('view') === 'review');
   const [returnFeature, setReturnFeature] = useState(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -90,6 +92,16 @@ function App() {
 
   async function navigate(id = 'products', selection = null, replace = false) {
     if (!activeProjectRef.current) { setProjectsOpen(true); setLoading(false); return; }
+    if (id === 'review') {
+      ++navigation.current; pendingDestination.current = null;
+      ++sourceSequence.current; setSource(null); setProof(null); setHelp(false);
+      setReviewOpen(true); setLoading(false); setQuery(''); setError('');
+      const url = `/?${new URLSearchParams({ project: activeProjectRef.current.id, view: 'review' })}`;
+      if (replace) history.replaceState(null, '', url);
+      else if (location.pathname + location.search !== url) history.pushState(null, '', url);
+      return;
+    }
+    setReviewOpen(false);
     const destination = `${activeProjectRef.current.id}:${id}`;
     if (pendingDestination.current === destination) return;
     pendingDestination.current = destination;
@@ -117,6 +129,7 @@ function App() {
   }
   function currentRoute() {
     const params = new URLSearchParams(location.search);
+    if (params.get('view') === 'review') return 'review';
     return params.get('space') || (params.get('view') === 'technical' ? 'root' : 'products');
   }
   async function loadProject(project, route = 'products', replace = false) {
@@ -156,9 +169,9 @@ function App() {
       else loadProject(project, currentRoute(), true);
     } catch (err) { if (sequence === initialization.current && epoch === projectEpoch.current) { setError(err.message); setLoading(false); } }
   }
-  function projectSelected(project) { setProjectsOpen(false); setProjectView(null); loadProject(project); }
+  function projectSelected(project) { setProjectsOpen(false); setProjectView(null); loadProject(project, reviewOpen ? 'review' : 'products'); }
   function projectUpdated(project) {
-    if (project.id === activeProjectRef.current?.id) loadProject(project, 'products', true);
+    if (project.id === activeProjectRef.current?.id) loadProject(project, reviewOpen ? 'review' : 'products', true);
   }
   function openProjects(review = false) { setProjectView(review ? activeProjectRef.current?.id : null); setProjectsOpen(true); }
   function toggleBrowse() {
@@ -240,7 +253,7 @@ function App() {
   useEffect(() => { scene.current?.select(selected?.id); setRenderStats(scene.current?.stats); }, [selected?.id]);
   useEffect(() => { scene.current?.setEdgesVisible(showEdges); setRenderStats(scene.current?.stats); }, [showEdges]);
   useEffect(() => { scene.current?.setMotion(motion); }, [motion]);
-  useEffect(() => { scene.current?.setVisible(view === 'map'); }, [view]);
+  useEffect(() => { scene.current?.setVisible(view === 'map' && !reviewOpen); }, [view, reviewOpen]);
   useEffect(() => {
     if (!selected) return;
     const controller = new AbortController(); setDetail(null); setDetailError('');
@@ -256,11 +269,12 @@ function App() {
   useEffect(() => {
     function handleKey(event) {
       if (projectsOpen) return;
+      if (reviewOpen) { if (event.key === 'Escape') setHelp(false); return; }
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') { event.preventDefault(); setSidebarOpen(true); if (panelsOverlaid) setInspectorCollapsed(true); requestAnimationFrame(() => searchInput.current?.focus()); }
       if (event.key === 'Escape') { setQuery(''); closeSource(); setProof(null); setHelp(false); searchInput.current?.blur(); if (panelsOverlaid && !source && !proof && !help) { setSidebarOpen(false); setInspectorCollapsed(true); } }
     }
     window.addEventListener('keydown', handleKey); return () => window.removeEventListener('keydown', handleKey);
-  }, [panelsOverlaid, source, proof, help, projectsOpen]);
+  }, [panelsOverlaid, source, proof, help, projectsOpen, reviewOpen]);
   useEffect(() => {
     if (!activeProject?.id) return;
     const id = activeProject.id;
@@ -297,13 +311,14 @@ function App() {
   const productResults = query.trim() ? [...(catalog?.nodes || []), ...(!productMode ? catalog?.foundations || [] : []), ...(graph?.nodes || []).filter(isProduct)].filter((item, i, all) => (!productMode || item.kind !== 'foundation') && all.findIndex(n => n.id === item.id) === i && `${item.name} ${item.summary}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 8) : [];
   const summary = node?.summary || '';
 
-  return <div className={`app-shell ${productMode ? 'product-mode' : 'technical-mode'}`}>
+  return <div className={`app-shell ${reviewOpen ? 'review-mode' : productMode ? 'product-mode' : 'technical-mode'}`}>
     <header className="topbar">
       <button className="brand" onClick={() => { setReturnFeature(null); navigate('products'); }} aria-label="Atlas home"><span className="brand-mark"><Orbit size={24} strokeWidth={1.25}/></span><span>atlas<span className="brand-dot">.</span></span><span className="brand-caption">YOUR PRODUCT, CONNECTED</span></button>
-      <div className="perspective-switch" aria-label="Explorer perspective"><button className={productMode ? 'active' : ''} onClick={() => switchMode('product')} aria-pressed={productMode}><Orbit size={15}/> Product universe</button><button className={!productMode ? 'active' : ''} onClick={() => switchMode('technical')} aria-pressed={!productMode}><Code2 size={15}/> Technical depth</button></div>
+      <div className="perspective-switch" aria-label="Explorer perspective"><button className={!reviewOpen && productMode ? 'active' : ''} onClick={() => switchMode('product')} aria-pressed={!reviewOpen && productMode}><Orbit size={15}/> Product universe</button><button className={!reviewOpen && !productMode ? 'active' : ''} onClick={() => switchMode('technical')} aria-pressed={!reviewOpen && !productMode}><Code2 size={15}/> Technical depth</button><button className={reviewOpen ? 'active' : ''} onClick={() => navigate('review')} aria-pressed={reviewOpen}><GitBranch size={15}/> PR review</button></div>
       <div className="header-actions"><button className="project-picker" onClick={() => openProjects()} title={activeProject?.path || 'Choose a repository'}><Folder size={14}/><span>{activeProject?.name || 'Choose repository'}</span><ChevronRight size={12}/></button><button className="icon-button" onClick={() => setHelp(true)} title="About Atlas" aria-label="About Atlas"><CircleHelp size={18}/></button><span className="version">EXPLORER 03</span></div>
     </header>
-    <div className={`workspace ${panelsOverlaid ? 'panels-overlaid' : ''}`}>
+    {reviewOpen && <PRReview key={activeProject?.id || 'none'} project={activeProject} onClose={() => switchMode('product')}/>}
+    <div className={`workspace ${panelsOverlaid ? 'panels-overlaid' : ''}`} style={reviewOpen ? { display: 'none' } : undefined}>
       <aside id="browse-panel" aria-label="Browse the universe" className={`sidebar ${sidebarOpen ? '' : 'panel-collapsed'}`}>
         <div className="sidebar-top"><div className="eyebrow">THE OBSERVATORY</div><button className="panel-close sidebar-close" onClick={() => setSidebarOpen(false)} aria-label="Close browse panel"><X size={15}/></button><button className={`home-item ${rootView ? 'active' : ''}`} onClick={home}><Globe2 size={17}/><span>{productMode ? 'The product universe' : 'Repository modules'}</span><ChevronRight size={14}/></button>
           <div className="search-wrap"><Search size={15}/><input ref={searchInput} aria-label="Find code or features" placeholder={productMode ? 'Find a feature or code…' : 'Find a module or foundation…'} value={query} onChange={e => setQuery(e.target.value)}/>{query ? <button onClick={() => setQuery('')} aria-label="Clear search"><X size={13}/></button> : <kbd>⌘ K</kbd>}</div>
@@ -353,7 +368,7 @@ function App() {
         </> : <div className="inspector-empty"><Orbit size={40}/><h2>Follow your curiosity.</h2><p>Choose a feature to see what it does and what it connects to.</p></div>}
       </aside>
     </div>
-    <footer className="statusbar">
+    <footer className="statusbar" style={reviewOpen ? { display: 'none' } : undefined}>
       <div className="footer-status"><span className="status-dot"/>{status ? 'Local index ready' : 'Connecting to local index'}<span className="footer-index-details"><span className="footer-separator">/</span><button onClick={() => setHelp(true)}>{productMode ? 'Product map · source-backed' : status?.indexedAt ? `Indexed ${new Date(status.indexedAt).toLocaleDateString('en', { month: 'short', day: 'numeric' })}` : 'Local repository'}</button></span></div>
       <div className="footer-stats"><span>{number(status?.stats?.files)} files</span><span>{number(status?.stats?.symbols)} symbols</span><span>{number(status?.stats?.semanticEdges ?? status?.stats?.edges)} code links</span></div>
       <button className="footer-note" onClick={() => setHelp(true)} title="About this map">
