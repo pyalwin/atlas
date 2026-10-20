@@ -8,6 +8,7 @@
 
 Turn a local Git checkout into a three-dimensional code universe — from product features down to folders, files, classes, and functions, with every connection backed by file-and-line evidence.
 
+[![CI](https://github.com/pyalwin/atlas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pyalwin/atlas/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![Node.js](https://img.shields.io/badge/node-20.19%2B%20%7C%2022.12%2B-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
