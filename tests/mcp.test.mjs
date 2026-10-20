@@ -14,6 +14,8 @@ test('MCP negotiation, scoping, evidence and candidate submission', async () => 
     let data = {};
     if (url.pathname === '/api/projects') data = options.method === 'POST' ? {project} : { projects: [project, {id: 'hidden', path: '/tmp'}] };
     if (url.pathname.endsWith('/map')) data = {map: {version: 1}, suggestion: null};
+    if (url.pathname === '/api/review/context') data = {reviewId: '0123456789abcdef', baseSha: 'a'.repeat(40), headSha: 'b'.repeat(40), files: []};
+    if (url.pathname === '/api/review/analysis') data = JSON.parse(options.body);
     if (url.pathname.endsWith('/candidate')) data = {suggestion: JSON.parse(options.body).map};
     return {ok: true, json: async () => data};
   }});
@@ -22,7 +24,7 @@ test('MCP negotiation, scoping, evidence and candidate submission', async () => 
   await server.connect(a); await client.connect(b);
   try {
     const {tools} = await client.listTools();
-    assert.equal(tools.length, 11);
+    assert.equal(tools.length, 17);
     assert.equal(tools.find(t => t.name === 'save_map_candidate').annotations.readOnlyHint, false);
     const listed = await client.callTool({name: 'list_projects', arguments: {}});
     assert.equal(JSON.parse(listed.content[0].text).projects.length, 1);
@@ -36,6 +38,17 @@ test('MCP negotiation, scoping, evidence and candidate submission', async () => 
     assert.equal(JSON.parse(context.content[0].text).generationGuide.authoringProtocol.length, 6);
     assert.ok(JSON.parse(context.content[0].text).generationGuide.contract.project.readerGuide.workflows[0].mainPath);
     assert.equal(JSON.parse(context.content[0].text).generationGuide.hierarchy[0].level, 'product overview');
+    const reviewContext = await client.callTool({name: 'get_review_context', arguments: {project: 'allowed', review: '0123456789abcdef'}});
+    assert.equal(JSON.parse(reviewContext.content[0].text).reviewGuide.version, 1);
+    assert.equal(JSON.parse(reviewContext.content[0].text).reviewGuide.process.length, 6);
+    const deniedReview = await client.callTool({name: 'get_review_diff', arguments: {project: 'hidden', review: '0123456789abcdef', path: 'service.py'}});
+    assert.equal(deniedReview.isError, true);
+    assert.equal(requests.some(r => r.url.pathname === '/api/review/diff'), false);
+    const analysis = {reviewId: '0123456789abcdef', findings: []};
+    const submittedReview = await client.callTool({name: 'save_review_analysis', arguments: {project: 'allowed', review: '0123456789abcdef', analysis}});
+    assert.deepEqual(JSON.parse(submittedReview.content[0].text), analysis);
+    assert.equal(requests.at(-1).options.method, 'PUT');
+    assert.equal(requests.at(-1).url.searchParams.get('review'), analysis.reviewId);
     const saved = await client.callTool({name: 'save_map_candidate', arguments: {project: 'allowed', indexedAt: 'v1', agent: 'test', map: {version: 1}}});
     assert.equal(saved.isError, undefined);
     assert.equal(requests.at(-1).options.method, 'PUT');
@@ -60,7 +73,7 @@ test('stdio entry point negotiates without stdout pollution', async () => {
   try {
     await client.connect(transport);
     const {tools} = await client.listTools();
-    assert.equal(tools.length, 11);
+    assert.equal(tools.length, 17);
   } finally { await client.close(); }
 });
 

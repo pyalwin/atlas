@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, ArrowUpRight, Braces, Check, ChevronDown, CircleHelp, Code2, ExternalLink, FileCode2, GitBranch, GitPullRequest, Loader2, MessageSquare, Pencil, ShieldCheck, SlidersHorizontal, X } from 'lucide-react';
 import { ReviewGuide } from './ReviewGuide.jsx';
+import {findingComment, findingKey} from './review-findings.mjs';
 import { findingCommentAnchor, hunkCommentAnchor, locateInlineComment } from './inline-review.mjs';
 import './pr-review.css';
 import './inline-review.css';
@@ -67,7 +68,7 @@ function CommentEditor({ anchor, initialBody = '', onSave, onCancel, editing = f
 function InlineComment({ comment, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
   return <article className={`pr-inline-thread ${comment.resolved ? 'resolved' : ''}`} aria-label={`Review comment on ${comment.side} line ${comment.line}`}>
-    <div className="pr-inline-thread-header"><MessageSquare size={12}/><strong>{comment.resolved ? 'Resolved' : 'Your comment'}</strong>{comment.source === 'analysis' && <span>From Atlas observation</span>}<span>{comment.side}:{comment.line}</span></div>
+    <div className="pr-inline-thread-header"><MessageSquare size={12}/><strong>{comment.resolved ? 'Resolved' : 'Your comment'}</strong>{comment.source === 'analysis' && <span>From agent review</span>}<span>{comment.side}:{comment.line}</span></div>
     {editing ? <CommentEditor anchor={comment} initialBody={comment.body} editing onSave={body => { onUpdate(comment.id, { body }); setEditing(false); }} onCancel={() => setEditing(false)}/> : <>
       <p>{comment.body}</p>
       <div className="pr-inline-thread-actions"><button onClick={() => onUpdate(comment.id, { resolved: !comment.resolved })}>{comment.resolved ? 'Reopen' : <><Check size={11}/>Resolve</>}</button><button onClick={() => setEditing(true)}><Pencil size={10}/>Edit</button><button className="pr-inline-delete" onClick={() => onDelete(comment.id)}>Delete</button></div>
@@ -75,7 +76,19 @@ function InlineComment({ comment, onUpdate, onDelete }) {
   </article>;
 }
 
-function DiffView({ diff, loading, error, focus, fileGuide, comments = [], onAddComment, onUpdateComment, onDeleteComment, onEvidence }) {
+function FindingAssessment({finding, assessment, onAssess}) {
+  const [dismissing, setDismissing] = useState(false);
+  const [note, setNote] = useState('');
+  if (!onAssess) return null;
+  return <div className="pr-finding-assessment">
+    {assessment?.decision === 'confirmed' ? <p>Marked as needing a change.</p> : assessment?.decision === 'dismissed' ? <p>Dismissed: {assessment.note}</p> : <p>Assess this agent finding before deciding.</p>}
+    <button onClick={() => {onAssess(finding, 'confirmed'); setDismissing(false);}}>Needs change</button>
+    <button onClick={() => setDismissing(value => !value)}>Dismiss with reason</button>
+    {dismissing && <div><textarea aria-label={`Reason to dismiss ${finding.title}`} value={note} onChange={event => setNote(event.target.value)} maxLength={2000} placeholder="What evidence makes this finding inapplicable?"/><button disabled={!note.trim()} onClick={() => {onAssess(finding, 'dismissed', note.trim()); setDismissing(false);}}>Save dismissal</button></div>}
+  </div>;
+}
+
+function DiffView({ diff, loading, error, focus, fileGuide, comments = [], onAddComment, onUpdateComment, onDeleteComment, onEvidence, findingDecisions = {}, onAssessFinding }) {
   const diffRef = useRef(null);
   const [draft, setDraft] = useState(null);
   const fileComments = comments.filter(comment => comment.path === (diff?.path || fileGuide?.path));
@@ -93,7 +106,7 @@ function DiffView({ diff, loading, error, focus, fileGuide, comments = [], onAdd
   const beginComment = (anchor, finding = null) => {
     if (!anchor || !onAddComment) return;
     setDraft({ ...anchor, source: finding ? 'analysis' : 'reviewer', findingId: finding?.id,
-      body: finding ? [finding.title, finding.detail].filter(Boolean).join('\n\n') : '' });
+      body: finding ? findingComment(finding) : '' });
   };
   const draftLocation = draft && locateInlineComment(diff, draft);
   useEffect(() => {
@@ -120,13 +133,14 @@ function DiffView({ diff, loading, error, focus, fileGuide, comments = [], onAdd
         return <section className="pr-diff-block" data-hunk-index={index} key={index} aria-label={`Change block ${index + 1}`}>
           <div className="pr-hunk-reading">
             <div className="pr-hunk-reading-header"><span>Change {index + 1} of {hunks.length}</span>{blockAnchor && onAddComment && <button onClick={() => beginComment(blockAnchor)}><MessageSquare size={12}/>Comment on block</button>}</div>
-            <p className={explanation?.summary ? '' : 'pr-hunk-no-summary'}>{explanation?.summary || 'Read the changed lines below. A source explanation is not available for this block.'}</p>
-            {(explanation?.watchpoints || []).map((finding, findingIndex) => {
-              const anchor = findingCommentAnchor(diff, finding, index, fileGuide?.oldPath);
-              const evidence = finding.evidence?.[0];
+            {explanation?.summary && <p className="pr-behavior-tldr">{explanation.summary}</p>}
+            {explanation?.impact && <p className="pr-behavior-impact"><strong>Why it matters:</strong> {explanation.impact}</p>}
+            {explanation?.syntaxSummary && <details className="pr-syntax-details"><summary>Syntax observations</summary><p>{explanation.syntaxSummary}</p><small>Generated from syntax. These are reading aids, not review findings.</small></details>}
+            {(fileGuide?.findings || []).filter(finding => findingCommentAnchor(diff, {evidence: [finding.anchor]}, index, fileGuide?.oldPath)).map((finding, findingIndex) => {
+              const anchor = findingCommentAnchor(diff, {evidence: [finding.anchor]}, index, fileGuide?.oldPath);
               return <div className="pr-hunk-finding" key={finding.id || findingIndex}>
-                <strong>{finding.title}</strong><p>{finding.detail}</p>
-                <div className="pr-hunk-finding-actions">{anchor && onAddComment && <button onClick={() => beginComment(anchor, finding)}><MessageSquare size={11}/>Use as comment</button>}{evidence && <button className="pr-hunk-source" onClick={() => onEvidence?.(evidence)}>{evidence.side || 'head'}:{evidence.line}<ArrowUpRight size={10}/></button>}</div>
+                <strong>[{finding.priority}] {finding.title}</strong><p>{finding.cause}</p><p><strong>When:</strong> {finding.trigger}</p><p><strong>Effect:</strong> {finding.consequence}</p><p><strong>Correction:</strong> {finding.fix}</p>
+                <FindingAssessment finding={finding} assessment={findingDecisions[findingKey(finding)]} onAssess={onAssessFinding}/><div className="pr-hunk-finding-actions">{anchor && onAddComment && <button onClick={() => beginComment(anchor, finding)}><MessageSquare size={11}/>Use as comment</button>}{finding.evidence.map((ref, index) => <button key={index} className="pr-hunk-source" onClick={() => onEvidence?.(ref)}>{ref.path}:{ref.line} ({ref.side})<ArrowUpRight size={10}/></button>)}</div>
               </div>;
             })}
           </div>
@@ -336,13 +350,13 @@ export function PRReview({ project, onClose }) {
         onSelectFile={selectFile} reviewed={reviewed} onToggleReviewed={markReviewed}
         onSelectContext={selectGraphNode} onSelectConnection={selectEdge}
       >
-        {({ fileGuide, comments, onAddComment, onUpdateComment, onDeleteComment }) =>
+        {({ fileGuide, comments, onAddComment, onUpdateComment, onDeleteComment, findingDecisions, onAssessFinding }) =>
             <section className="pr-file-detail" aria-label="Selected file review">
               <div className="pr-detail-heading"><div>{selectedFile ? <><Status status={selectedFile.status}/><code>{selectedFile.path}</code></> : <span>File review</span>}</div></div>
               {selectedFile?.oldPath && selectedFile.oldPath !== selectedFile.path && <p className="pr-rename-note">Renamed from <code>{selectedFile.oldPath}</code></p>}
               <div className="pr-detail-tabs" role="tablist" aria-label="File review view" onKeyDown={tabKeyDown}><button role="tab" tabIndex={tab === 'diff' ? 0 : -1} aria-selected={tab === 'diff'} aria-controls="pr-diff-panel" id="pr-diff-tab" className={tab === 'diff' ? 'active' : ''} onClick={() => setTab('diff')}><Code2 size={13}/>Diff<span>{selectedFile ? `+${selectedFile.additions} −${selectedFile.deletions}` : ''}</span></button><button role="tab" tabIndex={tab === 'connections' ? 0 : -1} aria-selected={tab === 'connections'} aria-controls="pr-connections-panel" id="pr-connections-tab" className={tab === 'connections' ? 'active' : ''} onClick={() => setTab('connections')}><GitBranch size={13}/>Connections<span>{edges.length}</span></button><span className="pr-detail-snapshot"><ShieldCheck size={11}/>Exact revision</span></div>
               {!!selectedFile?.changedSymbols?.length && <details className="pr-changed-symbols"><summary><Braces size={12}/>{number(selectedFile.changedSymbols.length)} changed symbol{selectedFile.changedSymbols.length === 1 ? '' : 's'}<ChevronDown size={12}/></summary><div>{selectedFile.changedSymbols.map((symbol, index) => <button key={`${symbol.id}-${index}`} className={`pr-symbol ${symbol.change}`} onClick={() => { setEvidence({ path: symbol.side === 'base' ? selectedFile.oldPath || selectedFile.path : selectedFile.path, line: symbol.line, side: symbol.side }); setTab('connections'); }} title={`Read ${symbol.side} source at line ${symbol.line}`}><Braces size={11}/><code>{symbol.name}</code><span>{symbol.change}</span><small>{symbol.side}:{symbol.line}</small><ArrowUpRight size={11}/></button>)}</div></details>}
-              {tab === 'diff' ? <div id="pr-diff-panel" role="tabpanel" aria-labelledby="pr-diff-tab"><DiffView diff={diff} loading={diffLoading} error={diffError} focus={diffFocus} fileGuide={fileGuide} comments={comments} onAddComment={onAddComment} onUpdateComment={onUpdateComment} onDeleteComment={onDeleteComment} onEvidence={evidence => { setEvidence(evidence); setTab('connections'); }}/></div> : <div id="pr-connections-panel" role="tabpanel" aria-labelledby="pr-connections-tab"><ConnectionList edges={edges} selectedEdge={selectedEdge} onEdge={selectEdge} onEvidence={setEvidence} source={source} sourceLoading={sourceLoading} sourceError={sourceError} review={review}/></div>}
+              {tab === 'diff' ? <div id="pr-diff-panel" role="tabpanel" aria-labelledby="pr-diff-tab"><DiffView findingDecisions={findingDecisions} onAssessFinding={onAssessFinding} diff={diff} loading={diffLoading} error={diffError} focus={diffFocus} fileGuide={fileGuide} comments={comments} onAddComment={onAddComment} onUpdateComment={onUpdateComment} onDeleteComment={onDeleteComment} onEvidence={evidence => { setEvidence(evidence); setTab('connections'); }}/></div> : <div id="pr-connections-panel" role="tabpanel" aria-labelledby="pr-connections-tab"><ConnectionList edges={edges} selectedEdge={selectedEdge} onEdge={selectEdge} onEvidence={setEvidence} source={source} sourceLoading={sourceLoading} sourceError={sourceError} review={review}/></div>}
             </section>
         }
       </ReviewGuide>}

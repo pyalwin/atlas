@@ -98,3 +98,8 @@
   .ru-ci-runs > div { flex-wrap: wrap; }
   .ru-ci-runs small { margin-left: 15px; }
 }
+.ru-analysis-status { position: relative; z-index: 3; margin: 12px 20px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--text); font-size: 11px; max-width: 620px; }
+.ru-analysis-status p { margin: 7px 0; line-height: 1.6; }
+.ru-analysis-status button { color: var(--teal); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; margin-right: 8px; font-size: 10px; }
+.ru-narrative .ru-analysis-status, .ru-file-orbit .ru-analysis-status { margin: 18px 0; padding: 12px; max-width: 100%; background: #111d24; color: #dce6e8; border-color: #2b4148; }
+.ru-analysis-status button { margin-top: 6px; }

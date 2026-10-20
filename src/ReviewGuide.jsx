@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Check, CheckCheck, ChevronDown, CircleHelp, Clipboard, FileCode2, GitBranch, ListChecks, Loader2, MessageSquare, Search, ShieldCheck, TestTube2, TriangleAlert } from 'lucide-react';
+import {reviewRequest, findingKey} from './review-findings.mjs';
 import { evaluateReview, questionAssessment, questionsForGuide } from './review-verdict.mjs';
 import { ReviewUniverse } from './ReviewUniverse.jsx';
 import { ReviewQuestion } from './ReviewQuestion.jsx';
@@ -22,7 +23,7 @@ const titleContent = value => String(value || '').split(/([A-Za-z_][\w.]*\(\))/g
   /^[A-Za-z_][\w.]*\(\)$/.test(part) ? <code className="ru-title-code" key={index}>{part}</code> : part);
 const inlineCode = value => String(value || '').split(/(`[^`]+`)/g).map((part, index) =>
   part.startsWith('`') ? <code key={index}>{part.slice(1, -1)}</code> : part);
-const blankState = scope => ({ scope, step: 'brief', visited: [], answers: {}, answerRationales: {}, fileConcerns: {}, inlineComments: [], validation: { status: 'not_checked', note: '' }, limitations: { acknowledged: false, note: '' }, decision: '', guideVersion: null });
+const blankState = scope => ({ scope, step: 'brief', visited: [], answers: {}, answerRationales: {}, fileConcerns: {}, findingDecisions: {}, inlineComments: [], validation: { status: 'not_checked', note: '' }, limitations: { acknowledged: false, note: '' }, decision: '', guideVersion: null });
 function restoreState(scope) {
   try {
     const saved = JSON.parse(localStorage.getItem(scope));
@@ -31,7 +32,7 @@ function restoreState(scope) {
     return { ...blankState(scope), ...saved,
       step: STEPS.some(step => step.id === saved.step) ? saved.step : 'brief',
       visited: list(saved.visited),
-      answers: record(saved.answers), answerRationales: record(saved.answerRationales), fileConcerns: record(saved.fileConcerns),
+      answers: record(saved.answers), answerRationales: record(saved.answerRationales), fileConcerns: record(saved.fileConcerns), findingDecisions: record(saved.findingDecisions),
       inlineComments: list(saved.inlineComments).filter(item => item && typeof item.id === 'string' && typeof item.path === 'string' && typeof item.body === 'string' && ['base', 'head'].includes(item.side) && Number.isInteger(item.line) && item.line > 0),
       validation: { ...record(saved.validation), status: ['passed', 'failed', 'not_applicable'].includes(saved.validation?.status) ? saved.validation.status : 'not_checked', note: typeof saved.validation?.note === 'string' ? saved.validation.note : '' },
       limitations: { acknowledged: saved.limitations?.acknowledged === true, note: typeof saved.limitations?.note === 'string' ? saved.limitations.note : '' },
@@ -90,7 +91,7 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
   const questions = questionsForGuide(guide);
   const files = guide ? list(guide.files) : [];
   const reviewedSet = useMemo(() => reviewed instanceof Set ? reviewed : new Set(reviewed), [reviewed]);
-  const verdict = useMemo(() => evaluateReview({ review, guide, reviewedFiles: reviewedSet, answers: state.answers, fileConcerns: state.fileConcerns, inlineComments: state.inlineComments, ci, ciLoading, validation: state.validation, limitations: state.limitations }), [review, guide, reviewedSet, state.answers, state.fileConcerns, state.inlineComments, ci, ciLoading, state.validation, state.limitations]);
+  const verdict = useMemo(() => evaluateReview({ review, guide, reviewedFiles: reviewedSet, answers: state.answers, fileConcerns: state.fileConcerns, inlineComments: state.inlineComments, findingDecisions: state.findingDecisions, ci, ciLoading, validation: state.validation, limitations: state.limitations }), [review, guide, reviewedSet, state.answers, state.fileConcerns, state.inlineComments, state.findingDecisions, ci, ciLoading, state.validation, state.limitations]);
   const selected = files.find(file => file.path === selectedPath);
   const inlinePointEvidence = list(selected?.hunks).flatMap(hunk => list(hunk.watchpoints)).flatMap(point => list(point.evidence));
   const otherFilePoints = list(selected?.watchpoints).filter(point => !list(point.evidence).some(ref =>
@@ -132,7 +133,7 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
         // Version 3 adds coverage evidence; questions and source revisions are unchanged.
         const compatibleCoverageUpdate = current.guideVersion === 2 && data.version === 3;
         return current.guideVersion != null && current.guideVersion !== data.version && !compatibleCoverageUpdate
-          ? { ...blankState(scope), fileConcerns: current.fileConcerns, inlineComments: current.inlineComments, validation: current.validation, limitations: current.limitations, guideVersion: data.version }
+          ? { ...blankState(scope), fileConcerns: current.fileConcerns, findingDecisions: current.findingDecisions, inlineComments: current.inlineComments, validation: current.validation, limitations: current.limitations, guideVersion: data.version }
           : { ...current, guideVersion: data.version };
       });
     }).catch(cause => { if (!controller.signal.aborted) setError(cause.message); });
@@ -238,6 +239,7 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
       ...(kind === 'agent' && selected ? ['', `Current file: ${selected.path}`, selected.summary,
         ...list(selected.evidence).map(item => `Evidence: ${item.side}:${item.path}:${item.line}${githubSource(review, item) ? ` ${githubSource(review, item)}` : ''}`)] : []),
       ...questions.map(question => { const answer = state.answers[question.id]; return `${questionLabel(question)}\nAnswer: ${answer?.response || question.choices?.find(choice => choice.id === answer?.choice)?.text || 'Unanswered'}\nAssessment: ${questionAssessment(question, answer).complete ? question.kind === 'reflection' ? 'Self-assessed against evidence' : 'Matches source evidence' : 'Needs review'}`; }),
+      '', 'Agent finding assessments:', ...list(guide?.findings).map(finding => `${finding.priority}: ${finding.title} — ${state.findingDecisions[findingKey(finding)]?.decision || 'unassessed'} ${state.findingDecisions[findingKey(finding)]?.note || ''}`),
       '', 'Inline comments:', ...state.inlineComments.map(comment => `${comment.side}:${comment.sourcePath || comment.path}:${comment.line} — ${comment.body} [${comment.resolved ? 'resolved' : 'open'}]`),
       '', 'File concerns:', ...Object.entries(state.fileConcerns).filter(([, value]) => value.text?.trim()).map(([path, value]) => `${path}: ${value.text}${value.resolved ? ' [resolved]' : ' [open]'}`),
       '', `Validation: ${state.validation.status}`, state.validation.note,
@@ -248,8 +250,8 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
     return lines.filter(value => value != null).join('\n');
   }
   async function copy(kind) {
-    const body = packet(kind);
-    try { await navigator.clipboard.writeText(body); setCopyStatus(kind === 'agent' ? 'Context copied. Paste it into your agent.' : 'Review copied.'); setCopyFallback(''); }
+    const body = kind === 'analysis' ? reviewRequest(projectId, review) : packet(kind);
+    try { await navigator.clipboard.writeText(body); setCopyStatus(['agent', 'analysis'].includes(kind) ? 'Request copied. Paste it into your connected agent.' : 'Review copied.'); setCopyFallback(''); }
     catch { setCopyFallback(body); setCopyStatus('Select and copy the context below.'); }
     clearTimeout(copyTimer.current); copyTimer.current = setTimeout(() => setCopyStatus(''), 5500);
   }
@@ -266,7 +268,7 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
   const primaryFiles = files.filter(file => file.role !== 'tests');
   const hasCallMap = [...list(guide?.impact?.before), ...list(guide?.impact?.after)].some(node => ['function', 'class', 'method', 'call-expression'].includes(node.kind));
   const changeFile = primaryFiles[Math.min(factIndex, Math.max(0, primaryFiles.length - 1))];
-  const revisionText = changeFile ? text(revision === 'base' ? changeFile.before : revision === 'head' ? changeFile.after : changeFile.summary).replace(/^Author explanation:\s*/, '') : guide?.brief?.summary;
+  const revisionText = revision === 'changes' && guide?.agentReview?.status === 'not-run' ? 'A behavioral review has not been supplied for this comparison. Ask your connected agent to explain the change and assess concrete defects.' : changeFile ? text(revision === 'base' ? changeFile.before : revision === 'head' ? changeFile.after : changeFile.summary).replace(/^Author explanation:\s*/, '') : guide?.brief?.summary;
   const revisionEvidence = list(changeFile?.evidence).filter(item => revision === 'changes' || item.side === revision);
   const questionAnswer = state.answers[questions[Math.min(questionIndex, Math.max(0, questions.length - 1))]?.id] || {};
   const question = questions[Math.min(questionIndex, Math.max(0, questions.length - 1))];
@@ -274,6 +276,7 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
   const nextUnreviewed = files.find(file => !reviewedSet.has(file.path));
   const continueLabel = ({ brief: 'Inspect the code', files: 'Check the tests', tests: 'Review questions', questions: 'See the verdict', verdict: verdict.canApprove ? 'Revisit code' : 'Keep reviewing' })[step];
   const continueReview = () => navigate(step === 'verdict' ? verdict.reasons?.[0]?.step || 'files' : STEPS[stepIndex + 1].id);
+  const analysisStatus = guide && ['brief', 'files'].includes(step) && <aside className="ru-analysis-status" aria-label="Agent review status"><strong>{guide.agentReview?.status === 'agent-reviewed' ? `Agent analysis · ${list(guide.findings).length} finding${list(guide.findings).length === 1 ? '' : 's'}` : 'Agent review has not run'}</strong><p>{guide.agentReview?.status === 'agent-reviewed' ? `${guide.agentReview.reviewedPaths.length} of ${files.length} files reported inspected; ${guide.agentReview.summarizedBlocks} of ${guide.agentReview.totalBlocks} blocks summarized. ${guide.agentReview.coverageComplete ? 'Declared scope is complete.' : 'The analysis has limitations or uninspected files.'} Findings require your assessment.` : 'Syntax observations explain what was edited. Your connected agent can investigate behavior, write TLDRs and submit evidence-backed findings.'}</p><button onClick={() => copy('analysis')}>Copy agent review request</button><button onClick={() => setRetry(value => value + 1)}>Reload analysis</button>{list(guide.agentReview?.limitations).length > 0 && <details><summary>Analysis limitations</summary>{guide.agentReview.limitations.map((limit, index) => <p key={index}>{limit}</p>)}</details>}</aside>;
   const fileChooser = <div className="ru-file-picker" role="region" aria-label="Changed file navigator">
     <label><Search size={15}/><input autoFocus aria-label="Find a changed file" placeholder="Find a changed file…" value={fileQuery} onChange={event => setFileQuery(event.target.value)}/><button aria-label="Close file navigator" onClick={() => setFilePickerOpen(false)}>×</button></label>
     <div>{filteredFiles.map((file, index) => <button key={file.path} aria-current={file.path === selectedPath ? 'true' : undefined} onClick={() => chooseFile(file.path)}><span className={reviewedSet.has(file.path) ? 'reviewed' : ''}>{reviewedSet.has(file.path) ? <Check size={12}/> : index + 1}</span><code>{file.path}</code><small>{file.role}</small></button>)}{!filteredFiles.length && <p>No matching files.</p>}</div>
@@ -291,11 +294,12 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
       {step === 'brief' && <div className="ru-revisions" role="group" aria-label="Map revision">{[{ id: 'base', label: 'Before' }, { id: 'changes', label: 'Changes' }, { id: 'head', label: 'After' }].map(item => <button key={item.id} aria-pressed={revision === item.id} className={revision === item.id ? 'active' : ''} onClick={() => setRevision(item.id)}>{item.label}</button>)}</div>}
     </div>
     {filePickerOpen && fileChooser}
+
     {!guide ? <div className="ru-loading" role={error ? 'alert' : 'status'}>{error ? <><CircleHelp size={24}/><h2>The guide is unavailable.</h2><p>{error}</p><button className="ru-action" onClick={() => setRetry(value => value + 1)}>Retry<ArrowRight size={15}/></button></> : <><Loader2 size={24} className="pr-spin"/><h2>Finding the change.</h2><p>Reading the pinned source and its connections.</p></>}</div> : <>
       {['brief', 'questions', 'verdict'].includes(step) && <section ref={contentRef} tabIndex={-1} className={`ru-narrative ru-narrative-${step}`} aria-label={STEPS[stepIndex].label}>
         {step === 'brief' && <>
           <span className="ru-overline">01 / UNDERSTAND THE CHANGE</span>
-          <h2>{titleContent(guide.brief.title || review.title)}</h2>
+          <h2>{titleContent(guide.brief.title || review.title)}</h2>{analysisStatus}
           <p className="ru-meta"><span>{primaryFiles.length ? `${primaryFiles.length} core files` : testFiles.length ? 'Test-only change' : 'No changed files'}</span>{testFiles.length > 0 && <button className="ru-link" onClick={() => navigate('tests')}>{testFiles.length} test files<ArrowUpRight size={12}/></button>}</p>
           <div className="ru-change-story" aria-live="polite">
             <span className="ru-overline">{revision === 'base' ? 'BEFORE' : revision === 'head' ? 'AFTER' : 'WHAT CHANGES'}{changeFile && <code>{leaf(changeFile.path)}</code>}</span>
@@ -322,15 +326,15 @@ export function ReviewGuide({ review, projectId, selectedPath, onSelectFile, rev
         </>}
       </section>}
       {['files', 'tests'].includes(step) && <>
-        {step === 'files' && <div className="ru-file-orbit"><span className="ru-overline">{step === 'files' ? '02 / INSPECT THE CHANGE' : '04 / TEST EVIDENCE'}</span><h2>{step === 'files' ? 'Code, in context.' : 'What gives us confidence?'}</h2><p>{step === 'files' ? `${verdict.progress.reviewed} of ${files.length} files reviewed. Select a world to inspect it.` : 'See what the tests check, where the evidence stops, and what still needs verification.'}</p><button className="ru-link" onClick={() => setFilePickerOpen(!filePickerOpen)}><Search size={14}/>Find a changed file</button>{step === 'files' && nextUnreviewed && nextUnreviewed.path !== selectedPath && <button className="ru-link" onClick={() => chooseFile(nextUnreviewed.path)}>Next unreviewed<ArrowRight size={14}/></button>}</div>}
+        {step === 'files' && <div className="ru-file-orbit"><span className="ru-overline">{step === 'files' ? '02 / INSPECT THE CHANGE' : '04 / TEST EVIDENCE'}</span><h2>{step === 'files' ? 'Code, in context.' : 'What gives us confidence?'}</h2><p>{step === 'files' ? `${verdict.progress.reviewed} of ${files.length} files reviewed. Select a world to inspect it.` : 'See what the tests check, where the evidence stops, and what still needs verification.'}</p>{analysisStatus}<button className="ru-link" onClick={() => setFilePickerOpen(!filePickerOpen)}><Search size={14}/>Find a changed file</button>{step === 'files' && nextUnreviewed && nextUnreviewed.path !== selectedPath && <button className="ru-link" onClick={() => chooseFile(nextUnreviewed.path)}>Next unreviewed<ArrowRight size={14}/></button>}</div>}
         <section className={`ru-inspector ru-inspector-${step}`} aria-label={step === 'files' ? 'File inspection' : 'Test evidence'}>
           <header className="ru-inspector-header"><div><span className="ru-overline">{step === 'files' ? `FILE ${selectedIndex + 1} / ${files.length}` : 'VERIFY THE HEAD COMMIT'}</span><h3>{step === 'files' ? leaf(selectedPath) || 'Select a file' : 'What do the tests establish?'}</h3></div><div className="ru-inspector-controls">{step === 'files' && <><button aria-label="Previous file" disabled={selectedIndex <= 0} onClick={() => onSelectFile(files[selectedIndex - 1].path)}><ArrowLeft size={16}/></button><button aria-label="Next file" disabled={selectedIndex >= files.length - 1} onClick={() => onSelectFile(files[selectedIndex + 1].path)}><ArrowRight size={16}/></button></>}<button aria-label="Return to constellation" onClick={() => navigate('brief')}>×</button></div></header>
           <div className="ru-inspector-scroll" ref={contentRef} tabIndex={-1}>
             {step === 'files' && selected && <>
-              <div className="ru-file-intro"><code className="ru-file-path">{selected.path}</code><p className="ru-file-summary">{selected.summary}</p><Evidence items={selected.evidence} review={review} onOpen={chooseFile} compact/>
+              <div className="ru-file-intro"><code className="ru-file-path">{selected.path}</code><p className="ru-file-summary">{selected.summarySource === 'agent' ? selected.summary : 'Behavioral summary pending agent review. The pinned diff and syntax details are available below.'}</p><Evidence items={selected.evidence} review={review} onOpen={chooseFile} compact/>
                 {!!list(selected.hunks).length && <div className="ru-hunks">{selected.hunks.slice(0, 8).map((hunk, index) => <button key={index} onClick={() => onSelectFile(selected.path, { ...hunk.evidence?.[0], hunkIndex: hunk.index ?? index })}><ArrowDown size={11}/>{hunk.heading || `Change ${index + 1}`}</button>)}</div>}
               </div>
-              <div className="ru-diff-slot">{typeof children === 'function' ? children({ fileGuide: selected, comments: fileComments, onAddComment: addComment, onUpdateComment: updateComment, onDeleteComment: deleteComment }) : children}</div>
+              <div className="ru-diff-slot">{typeof children === 'function' ? children({ fileGuide: selected, comments: fileComments, onAddComment: addComment, onUpdateComment: updateComment, onDeleteComment: deleteComment, findingDecisions: state.findingDecisions, onAssessFinding: (finding, decision, note = '') => update({findingDecisions: {...state.findingDecisions, [findingKey(finding)]: {decision, note}}}) }) : children}</div>
               {!!otherFilePoints.length && <details className="ru-details"><summary>Other file considerations<ChevronDown size={12}/></summary><Watchpoints items={otherFilePoints} review={review} onOpen={chooseFile}/></details>}
               <details className="ru-details"><summary>Before, after & related tests<ChevronDown size={12}/></summary><span className="ru-overline">BEFORE</span><p>{text(selected.before)}</p><span className="ru-overline">AFTER</span><p>{text(selected.after)}</p>{list(selected.relatedTests).slice(0,12).map((test,index)=><div key={index}><Evidence items={test.evidence} review={review} onOpen={chooseFile}/></div>)}{!!list(selected.analysis?.limitations).length && <p className="ru-fine-print">{selected.analysis.limitations.map(text).join(' ')}</p>}</details>
               {!!concern?.text?.trim() && <details className="ru-details"><summary>Earlier file note</summary><p>{concern.text}</p><label className="ru-check"><input type="checkbox" checked={concern.resolved === true} onChange={event => update({ fileConcerns: { ...state.fileConcerns, [selectedPath]: { ...concern, resolved: event.target.checked } } })}/>This earlier concern is resolved.</label></details>}

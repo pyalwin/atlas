@@ -14,7 +14,7 @@ from pathlib import PurePosixPath
 
 from .indexer import MAX_FILE_BYTES, safe_source
 
-VERSION = 4
+VERSION = 5
 MAX_DEFINITIONS = 24
 MAX_ASSERTIONS = 24
 MAX_RELATED_TESTS = 12
@@ -319,7 +319,7 @@ def list_names(names, limit=3):
 
 
 def watch(identity, title, detail, refs=None, severity='review'):
-    return {'id': identity, 'severity': severity, 'title': title, 'detail': detail, 'evidence': refs or []}
+    return {'id': identity, 'kind': 'reading-aid', 'severity': severity, 'title': title, 'detail': detail, 'evidence': refs or []}
 
 
 def explain_hunk(hunk, index, pairs, sides, role, parse_failed, refs):
@@ -405,7 +405,7 @@ def explain_hunk(hunk, index, pairs, sides, role, parse_failed, refs):
     if len(selected) > 1 and len(summary) + len(selected[1]) < 519:
         summary += ' ' + selected[1]
     return {'index': index, 'heading': hunk['heading'], 'evidence': refs,
-            'summary': compact(summary, 520), 'watchpoints': checks[:3]}
+            'summary': None, 'syntaxSummary': compact(summary, 520), 'watchpoints': []}
 
 
 def file_dossier(store, review, file):

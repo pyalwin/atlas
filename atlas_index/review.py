@@ -542,7 +542,29 @@ class ReviewStore:
 
     def guide(self, identity=None):
         from .review_guide import get_guide
-        return get_guide(self, identity)
+        from .review_analysis import attach_analysis, load_analysis
+        review = self._review(identity)
+        return attach_analysis(get_guide(self, review['id']), load_analysis(self, review))
+
+    def analysis(self, identity):
+        from .review_analysis import load_analysis
+        return load_analysis(self, self._review(identity))
+
+    def save_analysis(self, identity, raw):
+        from .review_analysis import save_analysis
+        return save_analysis(self, identity, raw)
+
+    def context(self, identity=None):
+        if not identity and (self.get().get('job') or {}).get('state') in {'queued', 'running'}:
+            raise ValueError('Wait for the review job to complete, or select an existing pinned review ID.')
+        review = self._review(identity)
+        return {'reviewId': review['id'], 'baseSha': review['baseSha'], 'headSha': review['headSha'],
+                'title': review.get('title'), 'stats': review['stats'],
+                'files': [{key: file.get(key) for key in ('path', 'oldPath', 'status', 'additions', 'deletions', 'binary', 'excluded', 'diffTruncated')} for file in review['files']],
+                'relationships': review['graph']['edges'][:150],
+                'relationshipsTruncated': len(review['graph']['edges']) > 150,
+                'truncated': review.get('truncated', {}), 'warnings': review.get('warnings', []),
+                'analysis': self.analysis(review['id'])}
 
     def source(self, path, side, line=None, identity=None):
         path = relative_path(path)

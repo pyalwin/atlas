@@ -130,3 +130,10 @@
 .pr-workspace.has-review .pr-heading-actions .pr-scope-toggle{border:0;padding:3px}
 @media(max-width:1100px){.pr-scope-title{max-width:180px}.pr-workspace.has-review .pr-heading-copy>p{display:none}}
 @media(max-width:700px){.pr-workspace.has-review .pr-heading{padding:10px 16px}.pr-scope-title{display:none}.pr-workspace.has-review .pr-heading-actions{max-width:none;padding:0}.pr-workspace.has-review .pr-heading-actions .pr-secondary-button{font-size:9px;white-space:nowrap}}
+.pr-syntax-details { color: var(--muted); font-size: 11px; margin: 12px 0; }
+.pr-syntax-details summary { cursor: pointer; }
+.pr-behavior-tldr { font-weight: 550; }
+.pr-behavior-impact { color: var(--muted); }
+.pr-finding-assessment { padding: 8px 0; font-size: 11px; }
+.pr-finding-assessment button { border: 1px solid var(--line); padding: 6px 8px; border-radius: 4px; color: var(--teal); margin-right: 7px; }
+.pr-finding-assessment textarea { display: block; width: 100%; padding: 8px; margin: 8px 0; color: var(--text); background: var(--panel); border: 1px solid var(--line); }

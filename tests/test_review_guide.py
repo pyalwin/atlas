@@ -162,15 +162,16 @@ def test_values():
         guide = self.store.guide(self.review(base)['id'])
         hunks = guide['files'][0]['hunks']
         self.assertEqual(len(hunks), 2)
-        self.assertIn('decodeUTF8', hunks[0]['summary'])
-        self.assertIn('parseHTTP', hunks[0]['summary'])
-        self.assertNotIn('accept', hunks[0]['summary'])
-        self.assertNotIn('value >= 0', hunks[0]['summary'])
-        self.assertIn('value >= 0', hunks[1]['summary'])
-        self.assertNotIn('decodeUTF8', hunks[1]['summary'])
+        self.assertIn('decodeUTF8', hunks[0]['syntaxSummary'])
+        self.assertIn('parseHTTP', hunks[0]['syntaxSummary'])
+        self.assertNotIn('accept', hunks[0]['syntaxSummary'])
+        self.assertNotIn('value >= 0', hunks[0]['syntaxSummary'])
+        self.assertIn('value >= 0', hunks[1]['syntaxSummary'])
+        self.assertNotIn('decodeUTF8', hunks[1]['syntaxSummary'])
         self.assertEqual(hunks[0]['watchpoints'], [])
-        self.assertIn('true and false', hunks[1]['watchpoints'][0]['detail'])
-        self.assertEqual(hunks[1]['watchpoints'][0]['evidence'][0]['side'], 'head')
+        self.assertEqual(hunks[1]['watchpoints'], [])
+        self.assertIsNone(hunks[1]['summary'])
+        self.assertEqual(guide['agentReview']['status'], 'not-run')
         self.assert_pinned_evidence(guide)
 
     def test_questions_require_source_comprehension_and_fingerprint_the_expected_answer(self):
@@ -181,7 +182,7 @@ def test_values():
         self.write('tests/test_service.py', 'from service import convert\n\ndef test_value():\n    assert convert("x") == 2\n')
         self.commit('change')
         guide = self.store.guide(self.review(base)['id'])
-        self.assertEqual(guide['version'], 4)
+        self.assertEqual(guide['version'], VERSION)
         questions = guide['questions']
         self.assertGreaterEqual(len(questions), 2)
         self.assertLessEqual(len(questions), 4)
@@ -270,7 +271,7 @@ def test_values():
         self.assertIsNone(question['correctChoiceId'])
         self.assertIn('cannot derive a reliable answer', question['explanation'])
         self.assertIn('service.js', question['prompt'])
-        self.assertIn('normalize(value)', guide['files'][0]['hunks'][0]['summary'])
+        self.assertIn('normalize(value)', guide['files'][0]['hunks'][0]['syntaxSummary'])
         self.assert_pinned_evidence(guide)
 
     def test_doc_only_and_test_only_scope_are_not_described_as_product_behavior(self):

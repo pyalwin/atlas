@@ -1,3 +1,4 @@
+import {findingKey} from './review-findings.mjs';
 export const DEFAULT_REVIEW_QUESTIONS = [
   { id: 'purpose', prompt: 'Is the intended change clear, and do you agree it is needed?' },
   { id: 'impact', prompt: 'Do you understand and accept the effect on callers and existing behavior?' },
@@ -41,7 +42,7 @@ export function questionAssessment(question, answer) {
 /** A local recommendation from explicit human decisions, never a GitHub approval. */
 export function evaluateReview({
   review, guide, reviewedFiles = [], answers = {}, fileConcerns = {},
-  inlineComments = [], ci = null, ciLoading = false, validation = {}, limitations = {}, acknowledged,
+  inlineComments = [], findingDecisions = {}, ci = null, ciLoading = false, validation = {}, limitations = {}, acknowledged,
 } = {}) {
   const files = Array.isArray(review?.files) ? review.files : [];
   const knownPaths = new Set(files.map(file => file.path));
@@ -82,6 +83,13 @@ export function evaluateReview({
     if (!note || concern?.resolved === true) continue;
     if (concern?.blocking === true) changesRequested = true;
     add(`concern:${file.path}`, `Open concern in ${file.path}`, note, 'files');
+  }
+  for (const finding of Array.isArray(guide?.findings) ? guide.findings : []) {
+    const assessment = findingDecisions[findingKey(finding)];
+    if (assessment?.decision === 'dismissed' && text(assessment.note)) continue;
+    if (assessment?.decision === 'confirmed') changesRequested = true;
+    add(`finding:${finding.id}`, assessment?.decision === 'confirmed' ? `Confirmed: ${finding.title}` : `Assess: ${finding.title}`,
+      finding.consequence, 'files');
   }
   for (const question of questions) {
     const assessment = assessmentFor(question);

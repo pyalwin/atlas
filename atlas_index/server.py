@@ -293,7 +293,7 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
             query = parse_qs(request.query, keep_blank_values=True)
             value = lambda name, default='': query.get(name, [default])[0]
             route = request.path
-            if route in {'/api/review', '/api/review/options', '/api/review/diff', '/api/review/source', '/api/review/guide', '/api/review/ci'}:
+            if route in {'/api/review', '/api/review/options', '/api/review/diff', '/api/review/source', '/api/review/guide', '/api/review/ci', '/api/review/context', '/api/review/analysis'}:
                 review = reviews(value('project'))
                 if route == '/api/review':
                     self.send(200, review.get())
@@ -303,6 +303,12 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
                     self.send(200, review.diff(value('path'), value('review') or None))
                 elif route == '/api/review/guide':
                     self.send(200, review.guide(value('review') or None))
+                elif route == '/api/review/context':
+                    self.send(200, review.context(value('review') or None))
+                elif route == '/api/review/analysis':
+                    if not value('review'):
+                        raise ValueError('Choose a pinned review ID.')
+                    self.send(200, review.analysis(value('review')))
                 elif route == '/api/review/ci':
                     self.send(200, get_ci(review, value('review')))
                 else:
@@ -391,6 +397,16 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
         def write(self, body):
             request = urlsplit(self.path)
             route = request.path
+            if route == '/api/review/analysis':
+                if self.command != 'PUT':
+                    self.send(405, {'error': 'Use PUT to save review analysis.'})
+                    return
+                query = parse_qs(request.query, keep_blank_values=True)
+                identity = query.get('review', [''])[0]
+                if not identity:
+                    raise ValueError('Choose a pinned review ID.')
+                self.send(200, reviews(query.get('project', [''])[0]).save_analysis(identity, body))
+                return
             if route == '/api/review':
                 if self.command != 'POST':
                     self.send(405, {'error': 'Use POST to create a review scope.'})

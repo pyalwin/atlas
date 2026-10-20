@@ -6,6 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import { repositoryRoot, ensureRepositoryService, localOrigin } from './session.mjs';
 
+const reviewGuide = JSON.parse(await readFile(new URL('./review-guide.json', import.meta.url), 'utf8'));
 const featureGuide = JSON.parse(await readFile(new URL('./feature-guide.json', import.meta.url), 'utf8'));
 
 // A deliberately narrow bridge: no shell, arbitrary HTTP, or model execution.
@@ -91,6 +92,28 @@ export async function createAtlasMcp({ repositories, baseUrl = 'http://127.0.0.1
   });
   tool('save_map_candidate', 'Save an agent-generated map for review in Atlas. Does not replace the saved map. Fails if the index changed or indexing is running.', { ...projectSchema, indexedAt: z.string().min(1), agent: z.string().min(1).max(160), map: z.record(z.string(), z.unknown()) }, false, async ({project, ...body}) => {
     await scoped(project); return api(`/api/projects/${encodeURIComponent(project)}/candidate`, {}, 'PUT', body);
+  });
+  const reviewSchema = {...projectSchema, review: z.string().regex(/^[a-f0-9]{16}$/)};
+  const reviewStatus = data => ({job: data.job, review: data.review ? {id: data.review.id, baseSha: data.review.baseSha, headSha: data.review.headSha, stats: data.review.stats} : null});
+  tool('start_review', 'Prepare a pinned PR or base/head comparison. Poll get_review_status until complete; no code is executed and nothing is posted.', {...projectSchema, pr: z.string().optional(), base: z.string().optional(), head: z.string().optional()}, false, async ({project, ...input}) => {
+    await scoped(project);
+    const body = Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined));
+    return reviewStatus(await api('/api/review', {project}, 'POST', body));
+  });
+  tool('get_review_status', 'Get review preparation status and the available pinned comparison.', projectSchema, true, async ({project}) => {
+    await scoped(project); return reviewStatus(await api('/api/review', {project}));
+  });
+  tool('get_review_context', 'Get pinned change inventory, sampled relationships and the review authoring protocol. Read diffs and source before writing behavioral summaries or findings.', {...projectSchema, review: z.string().regex(/^[a-f0-9]{16}$/).optional()}, true, async ({project, review}) => {
+    await scoped(project); return {...await api('/api/review/context', {project, ...(review ? {review} : {})}), reviewGuide};
+  });
+  tool('get_review_diff', 'Read the pinned diff and indexed hunks for one changed file; hunkIndex identifies a block for its TLDR.', {...reviewSchema, path: z.string().min(1)}, true, async args => {
+    await scoped(args.project); return api('/api/review/diff', args);
+  });
+  tool('get_review_source', 'Read bounded source from the exact base or head snapshot, including unchanged callers and tests. Follow truncation with further line requests.', {...reviewSchema, path: z.string().min(1), side: z.enum(['base', 'head']), line: z.number().int().positive().optional()}, true, async args => {
+    await scoped(args.project); const query = Object.fromEntries(Object.entries(args).filter(([, value]) => value !== undefined)); return api('/api/review/source', query);
+  });
+  tool('save_review_analysis', 'Save agent-authored behavioral TLDRs and concrete defects locally for human review. Requires pinned commits, inspected scope and source evidence. No approval or GitHub posting.', {...reviewSchema, analysis: z.record(z.string(), z.unknown())}, false, async ({project, review, analysis}) => {
+    await scoped(project); return api('/api/review/analysis', {project, review}, 'PUT', analysis);
   });
   return server;
 }

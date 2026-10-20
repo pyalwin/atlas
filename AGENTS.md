@@ -306,6 +306,10 @@ Review starts in the code universe. A navigation dock moves through five lenses,
 
 </details>
 
+## Behavioral code review
+
+Follow [REVIEWING.md](docs/REVIEWING.md). Syntax observations are reading aids, never review findings or block TLDRs. Use `get_review_context`, `get_review_diff` and `get_review_source` to reason about the actual behavior at pinned commits; submit `save_review_analysis` with concise summaries and only concrete introduced defects. Every finding needs a trigger, cause, consequence, correction and changed-line anchor with source evidence. Zero findings is valid; disclose incomplete inspection and tests not run. The existing harness session controls reasoning. Atlas does not run a model or send review comments to GitHub. Reviewers must assess findings; revised finding content invalidates prior local assessments.
+
 ## Index freshness
 
 Use the project's refresh action to rebuild its index. The old graph stays readable while rebuilding; a completed index replaces it atomically.

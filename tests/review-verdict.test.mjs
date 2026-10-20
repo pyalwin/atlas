@@ -242,3 +242,17 @@ test('optional stage acknowledgements are explicit, not inferred from navigation
   state.acknowledged.impact = true;
   assert.equal(evaluateReview(state).canApprove, true);
 });
+
+test('agent findings need assessment; dismissals are specific to the evidence fingerprint', () => {
+  const inputs = complete();
+  const finding = {id: 'quota', fingerprint: 'revision-one', title: 'Quota bypass', consequence: 'Over-quota requests are accepted.'};
+  inputs.guide.findings = [finding];
+  assert.equal(evaluateReview(inputs).canApprove, false);
+  assert.ok(evaluateReview(inputs).reasons.some(reason => reason.id === 'finding:quota'));
+  inputs.findingDecisions = {'revision-one': {decision: 'dismissed', note: 'The caller rejects this state before invoking the function.'}};
+  assert.equal(evaluateReview(inputs).canApprove, true);
+  inputs.findingDecisions = {'revision-one': {decision: 'confirmed'}};
+  assert.equal(evaluateReview(inputs).status, 'changes_requested');
+  finding.fingerprint = 'revision-two';
+  assert.equal(evaluateReview(inputs).status, 'needs_review');
+});
