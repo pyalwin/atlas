@@ -9,7 +9,7 @@ from collections import defaultdict
 from contextlib import closing
 from pathlib import Path
 
-PROJECTION_VERSION = 3
+PROJECTION_VERSION = 5
 DEFAULT_EXCLUSIONS = ('tests', 'test', 'deploy', 'devex', 'buildkite', '.github')
 SAMPLE_LIMIT = 5
 
@@ -32,7 +32,9 @@ def curated_node(raw, node_id, kind, parent, category):
     return {'id': node_id, 'name': raw['name'], 'kind': kind, 'parentId': parent,
             'path': '', 'line': None, 'endLine': None, 'summary': raw['summary'],
             'summarySource': raw.get('summarySource', 'curated'), 'language': None, 'category': category,
-            'evidence': raw.get('evidence', []),
+            'evidence': raw.get('evidence', []), 'documentation': raw.get('documentation', {}),
+            'entryPoints': raw.get('entryPoints', []), 'overview': raw.get('overview'),
+            'celestialRole': {'product-universe': 'galaxy', 'feature': 'sun', 'capability': 'planet', 'foundation': 'shared foundation'}.get(kind),
             'reason': raw.get('reason', ''), 'confidence': raw.get('confidence'),
             'metrics': dict(files=0, symbols=0, lines=0, children=0, imports=0, importedBy=0)}
 
@@ -40,7 +42,7 @@ def curated_node(raw, node_id, kind, parent, category):
 class Taxonomy:
     def __init__(self, raw):
         self.raw = raw
-        self.nodes = {'products': curated_node({'name': 'The product universe',
+        self.nodes = {'products': curated_node(raw.get('project') or {'name': 'The product universe',
                                                'summary': 'Explore what the product does, then follow its features into the code.'},
                                               'products', 'product-universe', None, 'product')}
         self.paths, self.parents, self.children = {}, {}, defaultdict(list)
@@ -94,6 +96,11 @@ def build_projection(store, raw):
     taxonomy = Taxonomy(raw)
     nodes = taxonomy.nodes
     status = store.status()
+    documented_at = raw.get('generation', {}).get('indexedAt')
+    for node in nodes.values():
+        if node.get('documentation'):
+            node['documentationIndexedAt'] = documented_at
+            node['documentationFreshness'] = 'unknown' if not documented_at else 'current' if documented_at == status['indexedAt'] else 'needs-refresh'
     coverage = {'mappedFiles': 0, 'excludedFiles': 0, 'unmappedFiles': 0,
                 'productFiles': 0, 'foundationFiles': 0, 'indexedAt': status['indexedAt'],
                 'indexedFiles': status['stats']['files'], 'notes': raw.get('notes', [])}

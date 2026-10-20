@@ -206,11 +206,11 @@ function positionsFor(nodes, edges) {
 
 // Product worlds have their own geography. Their size and position do not depend
 // on file volume, so a shared library cannot crowd out a user-facing feature.
-function productPositionsFor(nodes) {
+export function productPositionsFor(nodes, solarSystem = false) {
   const positions = new Map();
   const count = nodes.length;
   nodes.forEach((node, index) => {
-    if (count === 1) { positions.set(node.id, new THREE.Vector3()); return; }
+    if (count === 1 && !solarSystem) { positions.set(node.id, new THREE.Vector3()); return; }
     const rng = random(hash(`${node.id}:world`));
     const angle = Math.PI * 0.74 - index * Math.PI * 2 / count;
     const radius = (count <= 4 ? 150 : count <= 8 ? 205 : 235) * (0.94 + rng() * 0.12);
@@ -523,9 +523,24 @@ export class Universe {
     releaseGroup(this.graph);
     this.labels.replaceChildren();
     this.visuals.clear();
-    this.positions = this.reviewMode ? reviewPositionsFor(this.nodes, this.edges) : this.productMode ? productPositionsFor(this.nodes) : positionsFor(this.nodes, this.edges);
+    this.positions = this.reviewMode ? reviewPositionsFor(this.nodes, this.edges) : this.productMode ? productPositionsFor(this.nodes, this.parent?.kind === 'feature') : positionsFor(this.nodes, this.edges);
     this.sortedNodes = this.productMode ? [...this.nodes] : [...this.nodes].sort((a, b) => importance(b) - importance(a) || String(a.id).localeCompare(String(b.id)));
     this.orbits.visible = !this.productMode && !this.reviewMode;
+    if (this.productMode && this.parent?.kind === 'feature') {
+      // The central sun represents the parent feature, never an inferred dependency.
+      const sun = new THREE.Mesh(this.planetGeometry, new THREE.MeshBasicMaterial({color: '#f3cb76'}));
+      sun.scale.setScalar(21);
+      sun.userData.sharedGeometry = true;
+      const glow = new THREE.Sprite(new THREE.SpriteMaterial({map: this.glowTexture, color: '#f3bc63', transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending}));
+      glow.scale.setScalar(190);
+      this.graph.add(sun, glow);
+      for (const position of this.positions.values()) {
+        const ring = new THREE.Line(orbitGeometry(Math.hypot(position.x / 1.38, position.y / .83), .83 / 1.38, 160), new THREE.LineBasicMaterial({color: '#b89a63', transparent: true, opacity: .15, depthWrite: false}));
+        ring.scale.x = 1.38;
+        ring.scale.y = 1.38;
+        this.graph.add(ring);
+      }
+    }
     this.maxImportance = Math.max(1, ...this.sortedNodes.map(importance));
     this.graphBuildTime = performance.now();
     const dustPositions = [];

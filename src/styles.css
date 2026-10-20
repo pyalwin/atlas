@@ -116,3 +116,99 @@ html,body,#root{width:100%;min-width:0}
 @media(min-width:1101px) and (max-width:1650px){.panel-actions .panel-toggle:not(.expand-universe)>span{display:none}}
 @media(max-width:1100px){.expand-universe{display:none}.view-heading{padding:0 20px}.intro p{max-width:600px}.graph-toolbar{left:50%}}
 @media(max-width:600px){.view-heading{height:auto;min-height:86px;padding:12px 14px;flex-wrap:wrap;align-content:center;gap:8px}.view-heading>.breadcrumb{order:4;flex:0 0 100%;font-size:9px}.view-heading>.breadcrumb button{font-size:9px}.panel-toggle{font-size:9px;padding:5px 7px}.view-switch button{font-size:8px;padding:6px}.panel-actions{margin-left:auto}.view-heading>.view-switch{margin-left:0}.panels-overlaid>.sidebar,.panels-overlaid>.inspector{top:88px;bottom:12px}.intro p{font-size:10px}.universe-meta{font-size:8px}.gesture-hint{font-size:8px}.scope-bar>button{font-size:9px}.scope-bar .scope-reset{font-size:8px;max-width:none}.scope-bar{gap:12px}.graph-toolbar{left:50%}}
+
+.feature-documentation { margin: 22px 0; font-size: 13px; line-height: 1.7; }
+.feature-documentation details { padding: 12px 0; border-bottom: 1px solid rgba(130,170,180,.14); }
+.feature-documentation summary { cursor: pointer; color: #c2d9d7; font-weight: 600; }
+.feature-documentation p { white-space: pre-wrap; overflow-wrap: anywhere; color: #91a8ae; margin: 10px 0; }
+.feature-entry-points h3 { font-size: 13px; color: #c2d9d7; }
+.feature-entry-points button { color: #83e8cb; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; overflow-wrap: anywhere; }
+
+.overview-mode .inspector, .overview-mode .intro, .overview-mode .universe-meta { display: none; }
+.overview-mode .workspace { grid-template-columns: 270px minmax(0, 1fr); }
+.product-overview { overflow-y: auto; min-height: 0; padding: 28px clamp(20px, 4vw, 64px) 80px; color: #b5cacd; font-size: 14px; line-height: 1.75; }
+.product-overview > header, .product-overview > section { max-width: 1100px; margin: 0 auto 40px; }
+.product-overview h1 { color: #e1eeeb; font-size: clamp(28px, 3vw, 42px); font-weight: 500; letter-spacing: -.04em; margin: 8px 0 12px; }
+.product-overview h2 { color: #d4e7e2; font-size: 22px; font-weight: 500; margin: 0 0 16px; }
+.product-overview h3 { color: #cbe5df; font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+.product-overview p { white-space: pre-wrap; margin: 0 0 12px; }
+.overview-lead { font-size: 17px; max-width: 900px; }
+.overview-usage, .overview-tool-list, .overview-feature-list { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 18px; }
+.overview-usage > div, .overview-tool-list > div, .overview-relationships > div, .overview-feature-list > a { padding: 20px; border: 1px solid #284043; border-radius: 10px; background: #0e1c23; min-width: 0; }
+.product-overview pre { overflow-x: auto; font-size: 12px; background: #091219; padding: 12px; border-radius: 6px; }
+.overview-flow { list-style: none; padding: 0; }
+.overview-flow li { display: grid; grid-template-columns: 34px 1fr; gap: 16px; padding: 0 0 26px; position: relative; }
+.overview-step { border: 1px solid #467369; border-radius: 50%; height: 30px; display: grid; place-items: center; color: #8cddc5; }
+.overview-flow small { margin-left: 12px; font-size: 11px; color: #d7be86; border: 1px solid #5a5039; border-radius: 5px; padding: 3px 8px; }
+.overview-relationships { display: grid; gap: 14px; }
+.overview-feature-list a, .overview-relationships a { color: #91dac9; text-decoration: none; }
+.overview-feature-list span { font-size: 12px; color: #8cddc5; }
+.overview-sources { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.overview-sources button { border: 0; background: none; padding: 0; color: #719eaa; font-size: 11px; text-align: left; cursor: pointer; overflow-wrap: anywhere; }
+.overview-draft { max-width: 1100px; margin: 0 auto 20px; border-left: 3px solid #cfb876; padding: 10px 16px; color: #ddc78c; background: #29271c; font-size: 12px; }
+.overview-versions { max-width: 1100px; margin: 0 auto 24px; display: flex; gap: 18px; }
+.overview-versions a { color: #9abdb9; font-size: 12px; }
+.overview-caption { font-size: 12px; color: #79969c; }
+@media(max-width:1100px) { .overview-mode .workspace { grid-template-columns: minmax(0,1fr); } }
+
+.product-overview { flex: 1; }
+
+.overview-mode .panel-actions { display: none; }
+
+.functionality-explorer { margin-bottom: 42px; }
+.journey-goals { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 14px; margin: 18px 0 28px; }
+.journey-goals button { text-align: left; color: #b9d3d0; background: #10252a; border: 1px solid #355952; border-radius: 10px; padding: 20px; cursor: pointer; }
+.journey-goals button[aria-pressed="true"] { border-color: #9adac4; background: #183831; }
+.journey-goals strong, .journey-goals span { display: block; }
+.journey-goals strong { font-size: 16px; margin-bottom: 9px; color: #dcf0e8; }
+.journey-goals span { font-size: 13px; line-height: 1.7; }
+.journey-header { display: flex; justify-content: space-between; gap: 20px; align-items: center; }
+.journey-header button, .journey-choices button, .journey-scenarios > article > button { cursor: pointer; border: 1px solid #41645b; border-radius: 6px; background: #142e2c; color: #b3e4d0; padding: 10px 14px; font: inherit; font-size: 13px; }
+.journey-path { list-style: none; padding: 0; }
+.journey-path > li { display: grid; grid-template-columns: 32px 1fr; gap: 14px; padding-bottom: 20px; }
+.journey-step-number { border: 1px solid #48766b; border-radius: 50%; height: 30px; display: grid; place-items: center; }
+.journey-step-card { border: 1px solid #2a4245; border-radius: 10px; padding: 22px; background: #0e1d24; }
+.journey-path > li.current .journey-step-card { border-color: #5d9482; }
+.product-overview .journey-step-card h4, .journey-scenarios h4 { margin: 0 0 18px; color: #d4e9e1; font-size: 17px; font-weight: 500; }
+.journey-label { display: block; color: #719d94; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 5px; }
+.journey-detail { border-top: 1px solid #294043; padding: 12px 0; }
+.journey-detail summary { cursor: pointer; color: #a4d5c8; }
+.journey-detail p { margin-top: 12px; }
+.journey-detail .journey-detail { padding-left: 18px; margin-top: 10px; }
+.journey-evidence { margin: 12px 0; font-size: 11px; color: #73969b; }
+.journey-evidence summary { cursor: pointer; }
+.journey-evidence button { background: none; border: 0; color: #8abbb8; cursor: pointer; text-align: left; overflow-wrap: anywhere; padding: 6px 12px 6px 0; }
+.journey-choices { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 15px; }
+.journey-choices button[aria-pressed="true"] { background: #285044; }
+.journey-scenarios > article { border: 1px solid #30484a; border-radius: 10px; padding: 20px; margin-top: 14px; }
+.journey-scenarios dl { display: grid; grid-template-columns: 140px 1fr; gap: 10px 18px; }
+.journey-scenarios dt { color: #749b95; font-size: 12px; }
+.journey-scenarios dd { margin: 0; }
+.journey-end, .journey-example-notice { color: #9ed1bc; font-size: 12px; }
+@media(max-width:600px) { .journey-scenarios dl { grid-template-columns: 1fr; } }
+
+.overview-background { max-width: 1100px; margin: 0 auto 40px; }
+.overview-background > summary { color: #92b6ad; cursor: pointer; font-size: 13px; padding: 18px 0; border-top: 1px solid #2c4547; }
+.overview-background > section { margin: 20px 0 40px; }
+
+.workflow-diagram { background: #0b181e; border: 1px solid #2b4142; border-radius: 12px; padding: 20px 10px; margin: 24px 0 12px; overflow: auto; }
+.workflow-diagram svg { display: block; width: 100%; min-width: 780px; height: auto; }
+.workflow-node { width: 165px; height: 76px; border: 1px solid #42675e; border-radius: 9px; background: #142b2b; color: #d6e8df; cursor: pointer; padding: 10px; display: flex; flex-direction: column; justify-content: center; text-align: left; }
+.workflow-node span { font-size: 14px; line-height: 1.25; }
+.workflow-node small { font-size: 10px; color: #88b1a5; margin-top: 7px; }
+.workflow-node.selected, .workflow-node.scenario-step { border: 2px solid #a9dcc3; background: #20483d; }
+.workflow-step-explanation { border: 1px solid #426359; background: #102327; border-radius: 10px; padding: 22px; margin: 20px 0; }
+.workflow-benefit { color: #a6d5bd; border-left: 2px solid #80bea3; padding-left: 12px; }
+.workflow-expand, .workflow-tabs button, .workflow-scenario-buttons button { cursor: pointer; font: inherit; color: #b5d9ca; background: #152d2b; border: 1px solid #42665b; border-radius: 6px; padding: 8px 12px; }
+.workflow-tabs, .workflow-scenario-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.workflow-expand { margin: 8px 0 16px; }
+.workflow-invitation { color: #82a9a0; font-size: 12px; }
+.journey-scenarios > summary { cursor: pointer; padding: 14px 0; color: #97bfb1; }
+
+.product-overview:has(.workflow-diagram) { padding-top: 16px; }
+.product-overview:has(.workflow-diagram) > header { margin-bottom: 20px; }
+.product-overview:has(.workflow-diagram) h1 { font-size: 30px; margin: 8px 0 10px; }
+.product-overview:has(.workflow-diagram) .overview-lead { font-size: 14px; line-height: 1.65; }
+.product-overview:has(.workflow-diagram) .overview-draft { margin-bottom: 12px; padding: 8px 12px; }
+.product-overview:has(.workflow-diagram) .overview-versions { margin-bottom: 16px; }
+.functionality-explorer > header h2 { margin-bottom: 8px; }

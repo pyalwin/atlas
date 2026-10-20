@@ -1,0 +1,205 @@
+{
+  "version": 4,
+  "goal": "First explain the product to a human: what it is, how to use it, its end-to-end workflow and tools, and how its features connect. Then document implementation areas. A taxonomy of folders or astronomical metaphors does not explain a product.",
+  "hierarchy": [
+    {
+      "level": "product overview",
+      "represents": "what the product is and how it is used",
+      "field": "project.overview",
+      "instruction": "Answer what, usage, workflow, tools and relationships before listing feature areas."
+    },
+    {
+      "level": "feature",
+      "represents": "a coherent product outcome",
+      "field": "features",
+      "instruction": "Explain a responsibility and its place in the overall workflow."
+    },
+    {
+      "level": "capability",
+      "represents": "a distinct sub-behavior",
+      "field": "features[].capabilities",
+      "instruction": "Group by behavior where useful; do not invent levels to fill a visual metaphor."
+    },
+    {
+      "level": "implementation",
+      "represents": "real code and supporting foundations",
+      "field": "paths and entryPoints",
+      "instruction": "Connect explanations to source evidence and keep inferred workflow distinct from indexed references."
+    }
+  ],
+  "discovery": [
+    "Inspect repository documentation, manifests and executable entry points to establish what the product does and who uses it.",
+    "Call get_inventory and follow nextOffset until null to inventory the full indexed repository; stop and restart discovery if indexedAt changes. Expand truncated graphs and search for areas missing from the initial view. Separate user-facing behavior, developer-facing library APIs, shared foundations, tests, experiments and generated code.",
+    "Write project.overview first: what (plain-language product explanation), usage (actual CLI/MCP/API interfaces and commands), workflow (ordered, source-grounded stages with optional branches identified), tools (actual exposed tool/command names and behavior), and connections (feature IDs plus an explanation of what each supplies to the next). Every usage, stage, tool and connection needs source citations. Do not imply that optional embeddings, models, caches or hosted services are required by the default path. Explain how the graph is constructed, stored and used for retrieval in concrete terms.",
+    "Generate project.overview.journeys for the principal user goals. Write for someone who does not code: action, visible/expected result, real choices and progressive details in ordinary language. Keep filenames and technical terms in evidence, not the main story. Branch only when source supports distinct behavior. Include normal, failure and changed-state scenarios when observed. Scenarios describe expected behavior, never a passed or executed test. Unsupported behavior must be described as unknown, not invented.",
+    "The default explorer is a compact workflow diagram, not a set of generic tutorials. Start with the product\u2019s real purpose and one coherent lifecycle; separate workflows only when they represent meaningfully different product jobs. Supply a validated mainPath, short diagramLabel for each step, and benefit text explaining why that stage exists. For agent-context tools, explain actual mechanisms such as indexed reuse, narrow ranking, bounded payloads, revision checks and knowledge reuse. Do not invent measured token savings or latency claims. Prose, evidence and scenarios are revealed on interaction rather than occupying the main diagram.",
+    "Trace each proposed feature from its routes, commands, public APIs or UI actions through its implementation and related tests. Use source evidence to confirm boundaries across folders rather than naming folders as features.",
+    "Choose stable feature IDs and meaningful capability boundaries. Reuse existing reviewed identities where possible. Use narrow file prefixes when unrelated responsibilities share a folder.",
+    "Read representative source excerpts for every area. Identify supported inputs, outputs, state changes, error paths and dependencies. Distinguish code observations from intended behavior described only in documentation.",
+    "Write a short readable overview plus the structured documentation sections below for the project and each mapped area. Explain mechanisms in prose, and attach source citations separately.",
+    "Check every assigned path and citation against the index, review unassigned/excluded coverage, and disclose ambiguity, unsupported parser behavior and absent tests. Never equate changed tests with passed tests.",
+    "Submit an unreviewed candidate tied to indexedAt. On subsequent runs, revise affected documentation and preserve stable identities and reviewed ownership; do not overwrite the saved map."
+  ],
+  "documentationSections": {
+    "purpose": "Who uses this area, what outcome it provides, and why it exists. Explain its boundary against adjacent features.",
+    "behavior": "Describe the main user/developer journey, inputs, outputs, state changes, failure cases and important invariants.",
+    "implementation": "Explain the source-backed flow from entry points through the principal modules and storage/outputs. Explain why these pieces belong together.",
+    "dependencies": "Explain observed dependencies, shared foundations and callers. Distinguish static references from runtime assumptions; say when no dependency is established.",
+    "testing": "Identify the actual relevant test files/scenarios and what they assert. Explain gaps. Say explicitly when tests are absent or were not run.",
+    "limitations": "Explain uncertainties, known edge cases, evidence gaps, parser limitations, and claims that need human confirmation. Do not invent certainty."
+  },
+  "contract": {
+    "mapVersion": 1,
+    "project": {
+      "name": "Product name",
+      "summary": "At least 80 characters explaining this repository as a product",
+      "documentation": "All six sections above",
+      "overview": {
+        "what": "Explain what the product is in at least 80 characters.",
+        "usage": [
+          {
+            "name": "CLI or MCP (only if present)",
+            "description": "How a user or agent invokes this interface.",
+            "commands": [
+              "An actual command, if relevant"
+            ],
+            "evidence": [
+              {
+                "path": "src/entry.ts",
+                "line": 1
+              }
+            ]
+          }
+        ],
+        "workflow": [
+          {
+            "title": "Index source",
+            "description": "Explain inputs, transformation, output and its consumer.",
+            "optional": false,
+            "evidence": [
+              {
+                "path": "src/indexer.ts",
+                "line": 1
+              }
+            ]
+          }
+        ],
+        "tools": [
+          {
+            "name": "Actual tool/command name",
+            "description": "What it does, when to use it and what it returns.",
+            "evidence": [
+              {
+                "path": "src/server.ts",
+                "line": 1
+              }
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "from": "feature-id",
+            "to": "other-feature-id",
+            "description": "What passes between these responsibilities and why. Authored explanation, not an invented indexed edge.",
+            "evidence": [
+              {
+                "path": "src/server.ts",
+                "line": 1
+              }
+            ]
+          }
+        ],
+        "journeys": [
+          {
+            "id": "user-goal",
+            "title": "Plain-language goal",
+            "goal": "What the person wants to accomplish",
+            "start": "start",
+            "steps": [
+              {
+                "id": "start",
+                "title": "First action",
+                "action": "What the person does",
+                "result": "What the product does in response",
+                "choices": [
+                  {
+                    "label": "Continue",
+                    "next": "outcome"
+                  }
+                ],
+                "details": [
+                  {
+                    "title": "What happens behind this step?",
+                    "description": "A plain-language explanation. Nested details can expose deeper behavior.",
+                    "evidence": [
+                      {
+                        "path": "src/entry.ts",
+                        "line": 1
+                      }
+                    ]
+                  }
+                ],
+                "evidence": [
+                  {
+                    "path": "src/entry.ts",
+                    "line": 1
+                  }
+                ]
+              },
+              {
+                "id": "outcome",
+                "title": "Expected outcome",
+                "action": "What the person now does",
+                "result": "Expected result based on observed implementation",
+                "choices": [],
+                "evidence": [
+                  {
+                    "path": "src/entry.ts",
+                    "line": 1
+                  }
+                ]
+              }
+            ],
+            "scenarios": [
+              {
+                "title": "A behavior example",
+                "given": "Starting situation",
+                "when": "User action",
+                "then": "Expected observable outcome, not a claim that a test passed",
+                "steps": [
+                  "start",
+                  "outcome"
+                ],
+                "evidence": [
+                  {
+                    "path": "src/entry.ts",
+                    "line": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "area": {
+      "summary": "At least 80 characters of explanatory prose, maximum 4000",
+      "documentation": "All six sections, each 40\u20138000 characters; use paragraphs, not citation lists",
+      "evidence": [
+        {
+          "path": "indexed/repository/relative/file",
+          "line": 1,
+          "reason": "What this source supports"
+        }
+      ],
+      "entryPoints": [
+        {
+          "path": "indexed/implementation/file",
+          "line": 1,
+          "reason": "Why a reader should start here (at least 20 characters)"
+        }
+      ]
+    },
+    "notes": "Feature entryPoints are required. Capabilities and foundations may include them. Every citation must point to an indexed file and valid current line. Every assigned prefix must contain indexed source. Quality checks validate structure and references, not truth or completeness."
+  }
+}

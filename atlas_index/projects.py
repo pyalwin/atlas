@@ -80,7 +80,7 @@ def validate_map(raw):
         raise ValueError('The product map is too large (maximum 1 MB).')
 
     def bounded(value, depth=0):
-        if depth > 12:
+        if depth > 24:
             raise ValueError('The product map is nested too deeply.')
         if isinstance(value, str) and (len(value) > 12000 or '\0' in value):
             raise ValueError('Map text is too long or contains a null character.')
@@ -106,6 +106,11 @@ def validate_map(raw):
             clean_prefix(value)
         return values
 
+    if 'project' in raw:
+        project = raw['project']
+        if not isinstance(project, dict) or not isinstance(project.get('name'), str) or not 1 <= len(project['name'].strip()) <= 160 or not isinstance(project.get('summary'), str) or not 1 <= len(project['summary'].strip()) <= 4000:
+            raise ValueError('Project overview needs a name and summary.')
+        validate_optional_documentation(project)
     ids = set()
     for key in ('features', 'foundations'):
         items = raw.get(key, [])
@@ -133,6 +138,9 @@ def validate_map(raw):
                 if any(matches(p, other) or matches(other, p) for p in cap_paths for other in peer_paths):
                     raise ValueError('Peer capability paths must not overlap.')
                 peer_paths.extend(cap_paths)
+    if isinstance(raw.get('project'), dict) and 'overview' in raw['project']:
+        from .documentation import validate_overview
+        validate_overview(raw['project']['overview'], {item['id'] for item in raw.get('features', [])})
     exclusions = raw.get('excludedPaths', [])
     if not isinstance(exclusions, list):
         raise ValueError('excludedPaths must be a list of relative paths.')
@@ -155,11 +163,30 @@ def validate_item(item):
         raise ValueError('Every map area needs a name of at most 160 characters.')
     if not isinstance(item.get('summary'), str) or not 1 <= len(item['summary'].strip()) <= 4000:
         raise ValueError('Every map area needs an explanation of at most 4,000 characters.')
+    validate_optional_documentation(item)
+
+
+def validate_optional_documentation(item):
+    if 'documentation' in item:
+        from .documentation import SECTIONS
+        value = item['documentation']
+        if not isinstance(value, dict) or any(key not in SECTIONS or not isinstance(text, str) or len(text) > 8000 for key, text in value.items()):
+            raise ValueError('Documentation sections must be known text fields of at most 8000 characters.')
+    if 'entryPoints' in item:
+        entries = item['entryPoints']
+        if not isinstance(entries, list) or len(entries) > 20:
+            raise ValueError('Entry points must be a bounded list.')
+        for entry in entries:
+            if not isinstance(entry, dict) or not isinstance(entry.get('path'), str) or not isinstance(entry.get('line'), int) or isinstance(entry['line'], bool) or entry['line'] < 1 or not isinstance(entry.get('reason'), str):
+                raise ValueError('Entry points need path, positive line and explanation.')
+            clean_prefix(entry['path'])
 
 
 def mark_map(raw, source):
     raw = copy.deepcopy(raw)
     raw['summarySource'] = source
+    if isinstance(raw.get('project'), dict):
+        raw['project']['summarySource'] = source
     for item in [*raw.get('features', []), *raw.get('foundations', [])]:
         item['summarySource'] = source
         for capability in item.get('capabilities', []):
@@ -437,6 +464,8 @@ class ProjectRegistry:
                 raise ValueError('The source index changed. Read fresh context before submitting.')
             if (record.get('job') or {}).get('state') in {'queued', 'running'}:
                 raise ValueError('Wait for the project job to finish before submitting.')
+            from .documentation import validate_candidate_documentation
+            validate_candidate_documentation(candidate, self.paths(identity)['db'], record['path'])
             candidate['generation'] = {'agent': agent.strip(), 'indexedAt': indexed_at,
                                        'createdAt': now(), 'reviewed': False}
             candidate['reviewed'] = False

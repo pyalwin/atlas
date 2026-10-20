@@ -45,13 +45,22 @@ class ProjectTests(unittest.TestCase):
         stamp = self.registry.project(identity)['indexedAt']
         original = self.registry.map(identity)['map']
         candidate = candidate_map(None, None)
-        candidate['features'][0]['summary'] = 'Agent explanation'
+        from atlas_index.documentation import SECTIONS
+        guide = {key: 'This area implements the service behavior. Read the current source and verify its boundaries before depending on this explanation.' for key in SECTIONS}
+        candidate['project'] = {'name': 'Service', 'summary': 'This project exposes a small service interface with local implementation and explicit behavior to inspect in the source.', 'documentation': guide}
+        from feature_fixture import overview_fixture
+        candidate['project']['overview'] = overview_fixture('service/app.py', candidate['project']['summary'])
+        candidate['features'][0].update(summary=candidate['project']['summary'], documentation=guide, entryPoints=[{'path': 'service/app.py', 'line': 1, 'reason': 'Start here to inspect the service implementation.'}])
         route = f'/api/projects/{identity}/candidate'
         _, result, _ = self.request(route, 'PUT', {'map': candidate, 'indexedAt': stamp, 'agent': 'Codex'})
         self.assertEqual(result['map'], original)
         self.assertEqual(result['suggestion']['summarySource'], 'agent-generated')
         self.assertFalse(result['suggestion']['generation']['reviewed'])
         self.assertTrue(result['project']['hasSuggestion'])
+        _, preview, _ = self.request('/api/product/graph?project=' + identity + '&map=candidate')
+        self.assertEqual(preview['parent']['name'], 'Service')
+        self.assertEqual(preview['parent']['overview'], candidate['project']['overview'])
+        self.assertEqual(self.registry.map(identity)['map'], original)
         with self.assertRaises(urllib.error.HTTPError) as error:
             self.request(route, 'PUT', {'map': candidate, 'indexedAt': 'old', 'agent': 'Codex'})
         self.assertEqual(error.exception.code, 400)

@@ -98,6 +98,16 @@ class GraphStore:
                                       (f'%{escaped}%', f'%{escaped}%', query, f'{escaped}%', limit)).fetchall()
             return {'results': [json.loads(row['data']) for row in rows]}
 
+    def inventory(self, offset=0, limit=200):
+        if offset < 0 or offset > 10_000_000 or not 1 <= limit <= 500:
+            raise ValueError('Inventory offset or limit is out of range.')
+        with closing(self.connect()) as db:
+            rows = db.execute("SELECT data FROM nodes WHERE kind='file' ORDER BY path LIMIT ? OFFSET ?", (limit + 1, offset)).fetchall()
+            files = [json.loads(row['data']) for row in rows[:limit]]
+            status = json.loads(db.execute("SELECT value FROM metadata WHERE key='status'").fetchone()[0])
+        return {'files': [{'id': node['id'], 'path': node['path'], 'language': node.get('language'), 'metrics': node['metrics']} for node in files],
+                'indexedAt': status['indexedAt'], 'nextOffset': offset + limit if len(rows) > limit else None}
+
     def source(self, node_id, line=None):
         with closing(self.connect()) as connection:
             node = self.node(connection, node_id)
@@ -150,7 +160,7 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
     review_lock = threading.Lock()
     dist = (Path(dist) if dist else PROJECT_ROOT / 'dist').resolve()
 
-    def selected(identity):
+    def selected(identity, candidate=False):
         if identity:
             project = registry.project(identity)
         elif registry.active:
@@ -164,7 +174,15 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
         if key not in stores:
             stores[key] = GraphStore(paths['db'], repository=project['path'])
             product_stores[key] = ProductStore(stores[key], taxonomy_path=paths['map'], cache_path=paths['cache'])
-        return project, stores[key], product_stores[key]
+        products = product_stores[key]
+        if candidate:
+            if not paths['suggestion'].is_file():
+                raise FileNotFoundError('No generated map candidate is available.')
+            candidate_key = key + ':candidate'
+            if candidate_key not in product_stores:
+                product_stores[candidate_key] = ProductStore(stores[key], taxonomy_path=paths['suggestion'], cache_path=paths['suggestion'].with_name('candidate-projection.json'))
+            products = product_stores[candidate_key]
+        return project, stores[key], products
 
     def reviews(identity):
         project, _, _ = selected(identity)
@@ -308,9 +326,9 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
                 self.send(200, registry.map(identity) if action == 'map' else registry.changes(identity))
                 return
             known = {'/api/status', '/api/product/graph', '/api/product/node', '/api/product/status',
-                     '/api/graph', '/api/node', '/api/search', '/api/source'}
+                     '/api/graph', '/api/node', '/api/search', '/api/source', '/api/inventory'}
             if route in known:
-                project, store, products = selected(value('project'))
+                project, store, products = selected(value('project'), candidate=route.startswith('/api/product/') and value('map') == 'candidate')
                 if route == '/api/status':
                     self.send(200, {**store.status(), 'project': project})
                 elif route == '/api/product/graph':
@@ -329,6 +347,12 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
                     self.send(200, store.details(value('id', 'root')))
                 elif route == '/api/search':
                     self.send(200, store.search(value('q')))
+                elif route == '/api/inventory':
+                    try:
+                        offset, limit = int(value('offset', '0')), int(value('limit', '200'))
+                    except ValueError:
+                        raise ValueError('Inventory offset and limit must be whole numbers.')
+                    self.send(200, store.inventory(offset, limit))
                 elif route == '/api/source':
                     line = None
                     if 'line' in query:

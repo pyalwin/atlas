@@ -22,7 +22,7 @@ test('MCP negotiation, scoping, evidence and candidate submission', async () => 
   await server.connect(a); await client.connect(b);
   try {
     const {tools} = await client.listTools();
-    assert.equal(tools.length, 10);
+    assert.equal(tools.length, 11);
     assert.equal(tools.find(t => t.name === 'save_map_candidate').annotations.readOnlyHint, false);
     const listed = await client.callTool({name: 'list_projects', arguments: {}});
     assert.equal(JSON.parse(listed.content[0].text).projects.length, 1);
@@ -31,6 +31,8 @@ test('MCP negotiation, scoping, evidence and candidate submission', async () => 
     assert.equal(requests.some(r => r.url.pathname === '/api/source'), false);
     const context = await client.callTool({name: 'get_summary_context', arguments: {project: 'allowed'}});
     assert.equal(JSON.parse(context.content[0].text).project.indexedAt, 'v1');
+    assert.ok(JSON.parse(context.content[0].text).generationGuide.discovery.length >= 8);
+    assert.equal(JSON.parse(context.content[0].text).generationGuide.hierarchy[0].level, 'product overview');
     const saved = await client.callTool({name: 'save_map_candidate', arguments: {project: 'allowed', indexedAt: 'v1', agent: 'test', map: {version: 1}}});
     assert.equal(saved.isError, undefined);
     assert.equal(requests.at(-1).options.method, 'PUT');
@@ -55,7 +57,7 @@ test('stdio entry point negotiates without stdout pollution', async () => {
   try {
     await client.connect(transport);
     const {tools} = await client.listTools();
-    assert.equal(tools.length, 10);
+    assert.equal(tools.length, 11);
   } finally { await client.close(); }
 });
 

@@ -144,3 +144,10 @@ test('changing lenses and revisions preserves scene positions and camera', () =>
   assert.deepEqual(scene.controls.target, target);
   assert.deepEqual([...scene.positions], positions);
 });
+
+test('a feature system keeps even one planet away from its central sun', async () => {
+  const { productPositionsFor } = await import('../src/Universe.js');
+  const node = {id: 'capability:greetings:format'};
+  assert.ok(productPositionsFor([node], true).get(node.id).length() > 100);
+  assert.equal(productPositionsFor([node], false).get(node.id).length(), 0);
+});
