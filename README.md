@@ -10,7 +10,7 @@ Turn a local Git checkout into a three-dimensional code universe — from produc
 
 [![CI](https://github.com/pyalwin/atlas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/pyalwin/atlas/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/)
-[![Node.js](https://img.shields.io/badge/node-20.19%2B%20%7C%2022.12%2B-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Node.js](https://img.shields.io/badge/node-22.12%2B%20%7C%2024-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org/)
 [![React](https://img.shields.io/badge/react-18-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![Three.js](https://img.shields.io/badge/three.js-r180-000000?logo=threedotjs&logoColor=white)](https://threejs.org/)
 [![Vite](https://img.shields.io/badge/vite-7-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
@@ -51,7 +51,7 @@ Turn a local Git checkout into a three-dimensional code universe — from produc
 | --- | --- |
 | Git | A local working directory to explore |
 | Python | 3.12 or newer (one that understands your repository's syntax) |
-| Node.js | 20.19+ within the 20.x line, or 22.12+, with npm |
+| Node.js | 22.12+ or 24, with npm |
 
 ```sh
 git clone https://github.com/pyalwin/atlas.git
