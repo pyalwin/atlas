@@ -16,6 +16,7 @@ Turn a local Git checkout into a three-dimensional code universe — from produc
 <br />
 [![Local-first](https://img.shields.io/badge/local--first-no%20telemetry-83E8CB)](#-privacy-and-local-storage)
 [![No LLM calls](https://img.shields.io/badge/LLM%20calls-none-0B161D)](#-how-it-works)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/pyalwin/atlas)](https://github.com/pyalwin/atlas/commits/main)
 [![GitHub stars](https://img.shields.io/github/stars/pyalwin/atlas?style=flat&logo=github)](https://github.com/pyalwin/atlas/stargazers)
 
@@ -25,7 +26,8 @@ Turn a local Git checkout into a three-dimensional code universe — from produc
 [Language coverage](#-language-coverage) ·
 [CLI](#-cli) ·
 [API](#-local-api) ·
-[Contributing](#-development)
+[Contributing](#-development) ·
+[License](#-license)
 
 </div>
 
@@ -306,6 +308,10 @@ docs/          Product map format
 ```
 
 </details>
+
+## 📄 License
+
+Atlas is released under the [MIT License](LICENSE). Third-party dependencies keep their own licenses (MIT, ISC, and BSD-3-Clause).
 
 ---
 
