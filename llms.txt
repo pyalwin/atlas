@@ -1,0 +1,7 @@
+# Atlas
+
+Atlas maps a Git checkout into an evidence-backed code universe with a local UI and repository-scoped MCP tools.
+
+- [Agent and technical reference](AGENTS.md): Start here for setup, repository scope, service lifecycle, tools, APIs, parser coverage, storage and development checks.
+- [Product map schema](docs/PRODUCT_MAP.md): Required map fields, path ownership and evidence rules for generated candidates.
+- [README](README.md): Human introduction and getting started.

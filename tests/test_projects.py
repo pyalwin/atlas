@@ -38,6 +38,25 @@ class ProjectTests(unittest.TestCase):
         self.thread.join(timeout=2)
         self.temp.cleanup()
 
+    def test_agent_candidate_is_separate_and_rejects_stale_index(self):
+        project = self.registry.register(str(self.repo('agentrepo')))
+        self.registry.queue.join()
+        identity = project['id']
+        stamp = self.registry.project(identity)['indexedAt']
+        original = self.registry.map(identity)['map']
+        candidate = candidate_map(None, None)
+        candidate['features'][0]['summary'] = 'Agent explanation'
+        route = f'/api/projects/{identity}/candidate'
+        _, result, _ = self.request(route, 'PUT', {'map': candidate, 'indexedAt': stamp, 'agent': 'Codex'})
+        self.assertEqual(result['map'], original)
+        self.assertEqual(result['suggestion']['summarySource'], 'agent-generated')
+        self.assertFalse(result['suggestion']['generation']['reviewed'])
+        self.assertTrue(result['project']['hasSuggestion'])
+        with self.assertRaises(urllib.error.HTTPError) as error:
+            self.request(route, 'PUT', {'map': candidate, 'indexedAt': 'old', 'agent': 'Codex'})
+        self.assertEqual(error.exception.code, 400)
+        self.assertEqual(self.registry.map(identity)['suggestion'], result['suggestion'])
+
     def repo(self, name):
         path = self.base / name
         path.mkdir()

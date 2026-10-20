@@ -206,7 +206,7 @@ class ProjectRegistry:
                 entry.pop('_deferredJobs', None)
                 entry.pop('example', None)
                 if not Path(entry['_map']).is_file():
-                    directory = self.data_dir / 'projects' / entry['id']
+                    directory = Path(entry['_db']).parent
                     entry['_map'] = str(directory / 'product-map.json')
                     entry['_cache'] = str(directory / 'product-projection.json')
                     if not Path(entry['_map']).is_file():
@@ -425,6 +425,30 @@ class ProjectRegistry:
             raw = json.loads(paths['map'].read_text()) if paths['map'].exists() else None
             candidate = json.loads(paths['suggestion'].read_text()) if paths['suggestion'].exists() else None
             return {'map': raw, 'project': self.project(identity), 'suggestion': candidate}
+
+    def save_candidate(self, identity, raw, indexed_at, agent):
+        """Store agent output separately; never imply human review."""
+        if not isinstance(agent, str) or not 1 <= len(agent.strip()) <= 160:
+            raise ValueError('Provide an agent name of at most 160 characters.')
+        candidate = mark_map(validate_map(raw), 'agent-generated')
+        with self.lock:
+            record = self._get(identity)
+            if not indexed_at or indexed_at != record.get('indexedAt'):
+                raise ValueError('The source index changed. Read fresh context before submitting.')
+            if (record.get('job') or {}).get('state') in {'queued', 'running'}:
+                raise ValueError('Wait for the project job to finish before submitting.')
+            candidate['generation'] = {'agent': agent.strip(), 'indexedAt': indexed_at,
+                                       'createdAt': now(), 'reviewed': False}
+            candidate['reviewed'] = False
+            candidate['status'] = 'suggested'
+            for item in [*candidate.get('features', []), *candidate.get('foundations', [])]:
+                for area in [item, *item.get('capabilities', [])]:
+                    area['reviewed'] = False
+                    area['status'] = 'suggested'
+            atomic_json(self.paths(identity)['suggestion'], candidate)
+            record['hasSuggestion'], record['suggestionUpdatedAt'] = True, now()
+            self._save()
+        return self.map(identity)
 
     def save_map(self, identity, raw):
         reviewed = mark_map(validate_map(raw), 'reviewed')

@@ -21,7 +21,7 @@ EXTENSIONS = {
     '.md': 'Markdown', '.html': 'HTML', '.css': 'CSS', '.scss': 'CSS',
     '.graphql': 'GraphQL', '.proto': 'Protocol Buffers', '.tf': 'Terraform',
 }
-EXCLUDED_DIRS = {'.git', '.venv', 'venv', 'node_modules', '__pycache__', 'vendor',
+EXCLUDED_DIRS = {'.atlas', '.git', '.venv', 'venv', 'node_modules', '__pycache__', 'vendor',
                  'generated', '_generated', '.next', 'dist', 'build', '.cache',
                  '.aws', '.ssh', '.secrets', '.agents', '.claude', '.codex'}
 EXCLUDED_NAMES = {'package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'uv.lock',

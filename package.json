@@ -10,17 +10,29 @@
     "index": "node scripts/python.mjs -m atlas_index index",
     "serve": "node scripts/python.mjs -m atlas_index serve --port 4318",
     "build": "vite build",
-    "test": "node scripts/python.mjs -m unittest discover -s tests -v && npm run test:review",
-    "test:review": "node --test tests/review-verdict.test.mjs tests/review-universe.test.mjs tests/inline-review.test.mjs"
+    "test": "node scripts/python.mjs -m unittest discover -s tests -v && npm run test:review && npm run test:mcp && npm run test:setup",
+    "test:review": "node --test tests/review-verdict.test.mjs tests/review-universe.test.mjs tests/inline-review.test.mjs",
+    "mcp": "node mcp/server.mjs",
+    "test:mcp": "node --test tests/mcp.test.mjs",
+    "setup": "node scripts/setup.mjs",
+    "test:setup": "node --test tests/setup.test.mjs"
   },
   "dependencies": {
     "@babel/parser": "^7.28.5",
+    "@modelcontextprotocol/sdk": "^1.32.1",
+    "jsonc-parser": "^3.3.1",
     "lucide-react": "0.424.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "three": "0.180.0"
+    "smol-toml": "^1.9.1",
+    "three": "0.180.0",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "vite": "^7.3.7"
+  },
+  "bin": {
+    "atlas-mcp": "mcp/server.mjs",
+    "atlas-setup": "scripts/setup.mjs"
   }
 }

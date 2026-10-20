@@ -17,6 +17,8 @@ server = sub.add_parser('serve', help='Serve the graph API and built UI on local
 server.add_argument('--port', type=int, default=4318)
 server.add_argument('--db', type=Path, default=DEFAULT_DB)
 server.add_argument('--data-dir', type=Path, help='Store the local project registry and per-project indexes here.')
+repository_server = sub.add_parser('repository-serve', help='Serve one checkout with persistent data in its .atlas directory.')
+repository_server.add_argument('repository', type=Path)
 args = parser.parse_args()
 if sys.version_info < (3, 12):
     parser.exit(1, 'Atlas needs Python 3.12 or newer. Select a supported Python interpreter, or set ATLAS_PYTHON for the npm launcher.\n')
@@ -38,6 +40,9 @@ try:
             finally:
                 registry.close()
         print(json.dumps(status, indent=2))
+    elif args.command == 'repository-serve':
+        from .repository import serve_repository
+        serve_repository(args.repository)
     else:
         serve(args.db, args.port, data_dir=args.data_dir)
 except ValueError as exc:

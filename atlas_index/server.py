@@ -21,7 +21,8 @@ LOCAL_ORIGIN = re.compile(r'^http://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5
 
 
 class GraphStore:
-    def __init__(self, db_path=DEFAULT_DB):
+    def __init__(self, db_path=DEFAULT_DB, repository=None):
+        self.repository = Path(repository).resolve() if repository else None
         self.db_path = Path(db_path)
         if not self.db_path.is_file():
             raise ValueError('No graph yet. Run: python3 -m atlas_index index /path/to/repository')
@@ -103,7 +104,10 @@ class GraphStore:
             if node['kind'] not in {'file', 'class', 'function'}:
                 raise ValueError('Choose a file, function, or class to read its source.')
             status = json.loads(connection.execute("SELECT value FROM metadata WHERE key='status'").fetchone()['value'])
-        candidate = safe_source(Path(status['root']), node['path'])
+        root = Path(status['root']).resolve()
+        if self.repository is not None and root != self.repository:
+            raise ValueError('The source index belongs to a different repository.')
+        candidate = safe_source(root, node['path'])
         if candidate is None:
             raise FileNotFoundError('The indexed source file is no longer available.')
         if candidate.stat().st_size > MAX_FILE_BYTES:
@@ -158,7 +162,7 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
             raise ProjectNotReady('This project has not finished its first index yet.')
         key = project['id']
         if key not in stores:
-            stores[key] = GraphStore(paths['db'])
+            stores[key] = GraphStore(paths['db'], repository=project['path'])
             product_stores[key] = ProductStore(stores[key], taxonomy_path=paths['map'], cache_path=paths['cache'])
         return project, stores[key], product_stores[key]
 
@@ -291,6 +295,10 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
                         line = int(value('line'))
                     self.send(200, review.source(value('path'), value('side', 'head'), line, value('review') or None))
                 return
+            if route == '/api/service':
+                descriptor = getattr(self.server, 'repository_service', None)
+                self.send(200 if descriptor else 404, descriptor or {'error': 'Not a repository-local service.'})
+                return
             if route == '/api/projects':
                 self.send(200, registry.list())
                 return
@@ -371,7 +379,7 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
                     raise ValueError('Register a project with path and optional name.')
                 self.send(202, {'project': registry.register(body.get('path'), body.get('name'))})
                 return
-            match = re.fullmatch(r'/api/projects/([^/]+)(?:/(index|activate|map|suggestions))?', route)
+            match = re.fullmatch(r'/api/projects/([^/]+)(?:/(index|activate|map|suggestions|candidate))?', route)
             if not match:
                 self.send(404, {'error': 'Unknown project route.'})
                 return
@@ -381,6 +389,8 @@ def create_server(db_path=DEFAULT_DB, port=4318, host='127.0.0.1', dist=None, ta
                 self.send(200, {'project': registry.update(identity, body)})
             elif self.command == 'PUT' and action == 'map':
                 self.send(200, registry.save_map(identity, body.get('map')))
+            elif self.command == 'PUT' and action == 'candidate':
+                self.send(200, registry.save_candidate(identity, body.get('map'), body.get('indexedAt'), body.get('agent')))
             elif self.command == 'POST' and action == 'activate':
                 self.send(200, {'project': registry.activate(identity)})
             elif self.command == 'POST' and action in {'index', 'suggestions'}:
