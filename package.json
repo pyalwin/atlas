@@ -1,0 +1,24 @@
+{
+  "name": "atlas-code-universe",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:ui": "vite --host 127.0.0.1 --port 4317 --strictPort",
+    "index": "node scripts/python.mjs -m atlas_index index",
+    "serve": "node scripts/python.mjs -m atlas_index serve --port 4318",
+    "build": "vite build",
+    "test": "node scripts/python.mjs -m unittest discover -s tests -v"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.28.5",
+    "lucide-react": "0.424.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.7"
+  }
+}
