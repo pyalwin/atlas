@@ -2,7 +2,7 @@ import { ProductOverview } from './ProductOverview.jsx';
 import { FeatureDocumentation } from './FeatureDocumentation.jsx';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, Braces, Check, ChevronRight, CircleHelp, Code2, Compass, Copy, FileCode2, Folder, GitBranch, Globe2, Layers3, Link2, List, Loader2, Maximize2, Minimize2, Minus, Orbit, PanelLeft, PanelRight, Pause, Play, Plus, Search, Sparkles, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowLeft, ArrowRight, ArrowUpRight, Braces, Check, ChevronRight, CircleHelp, Code2, Compass, Copy, FileCode2, Folder, GitBranch, Globe2, Layers3, Link2, List, Loader2, Maximize2, Minimize2, Minus, Orbit, PanelLeft, PanelRight, Pause, Play, Plus, Search, Sparkles, Sun, Moon, X } from 'lucide-react';
 import { Universe } from './Universe.js';
 import { ProjectManager } from './ProjectManager.jsx';
 import { PRReview } from './PRReview.jsx';
@@ -51,6 +51,12 @@ async function request(path, signal, projectId) {
 }
 
 function App() {
+  const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || 'dark');
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'light' ? '#f4f7f9' : '#080d12');
+    try { localStorage.setItem('atlas-theme', theme); } catch { /* Theme still works when storage is unavailable. */ }
+  }, [theme]);
   const [status, setStatus] = useState(null);
   const [activeProject, setActiveProject] = useState(null);
   const [projectsOpen, setProjectsOpen] = useState(false);
@@ -319,7 +325,7 @@ function App() {
     <header className="topbar">
       <button className="brand" onClick={() => { setReturnFeature(null); navigate('products'); }} aria-label="Atlas home"><span className="brand-mark"><Orbit size={24} strokeWidth={1.25}/></span><span>atlas<span className="brand-dot">.</span></span><span className="brand-caption">YOUR PRODUCT, CONNECTED</span></button>
       <div className="perspective-switch" aria-label="Explorer perspective"><button className={!reviewOpen && productMode ? 'active' : ''} onClick={() => switchMode('product')} aria-pressed={!reviewOpen && productMode}><Orbit size={15}/> Product guide</button><button className={!reviewOpen && !productMode ? 'active' : ''} onClick={() => switchMode('technical')} aria-pressed={!reviewOpen && !productMode}><Code2 size={15}/> Technical depth</button><button className={reviewOpen ? 'active' : ''} onClick={() => navigate('review')} aria-pressed={reviewOpen}><GitBranch size={15}/> PR review</button></div>
-      <div className="header-actions"><button className="project-picker" onClick={() => openProjects()} title={activeProject?.path || 'Choose a repository'}><Folder size={14}/><span>{activeProject?.name || 'Choose repository'}</span><ChevronRight size={12}/></button><button className="icon-button" onClick={() => setHelp(true)} title="About Atlas" aria-label="About Atlas"><CircleHelp size={18}/></button><span className="version">EXPLORER 03</span></div>
+      <div className="header-actions"><button className="icon-button" onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`} aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}>{theme === 'light' ? <Moon size={18}/> : <Sun size={18}/>}</button><button className="project-picker" onClick={() => openProjects()} title={activeProject?.path || 'Choose a repository'}><Folder size={14}/><span>{activeProject?.name || 'Choose repository'}</span><ChevronRight size={12}/></button><button className="icon-button" onClick={() => setHelp(true)} title="About Atlas" aria-label="About Atlas"><CircleHelp size={18}/></button><span className="version">EXPLORER 03</span></div>
     </header>
     {reviewOpen && <PRReview key={activeProject?.id || 'none'} project={activeProject} onClose={() => switchMode('product')}/>}
     <div className={`workspace ${panelsOverlaid ? 'panels-overlaid' : ''}`} style={reviewOpen ? { display: 'none' } : undefined}>

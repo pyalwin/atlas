@@ -26,6 +26,7 @@ def validate_candidate_documentation(raw, db_path, root):
     if not isinstance(project, dict) or not isinstance(project.get('name'), str) or not 1 <= len(project['name'].strip()) <= 160:
         raise ValueError('Generated maps need a project name, overview and documentation.')
     validate_documentation(project)
+    from .reader_guide import validate_reader_guide
     with closing(sqlite3.connect(db_path)) as db:
         files = {row[0] for row in db.execute("SELECT path FROM nodes WHERE kind='file'")}
     line_counts = {}
@@ -48,6 +49,7 @@ def validate_candidate_documentation(raw, db_path, root):
             raise ValueError('Generated evidence line is outside the current source file.')
         return path
 
+    validate_reader_guide(project.get('readerGuide'), citation)
     validate_overview(project.get('overview'), {feature['id'] for feature in raw.get('features', [])}, citation)
     groups = [*raw.get('features', []), *raw.get('foundations', [])]
     if not groups:
@@ -55,6 +57,8 @@ def validate_candidate_documentation(raw, db_path, root):
     for group in groups:
         for area in [group, *group.get('capabilities', [])]:
             validate_documentation(area)
+            if area in raw.get('features', []) or 'readerGuide' in area:
+                validate_reader_guide(area.get('readerGuide'), citation)
             for prefix in area['paths']:
                 if not any(matches(path, clean_prefix(prefix)) for path in files):
                     raise ValueError(f'Assigned path has no indexed files: {prefix}')

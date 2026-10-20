@@ -1,5 +1,5 @@
 {
-  "version": 4,
+  "version": 5,
   "goal": "First explain the product to a human: what it is, how to use it, its end-to-end workflow and tools, and how its features connect. Then document implementation areas. A taxonomy of folders or astronomical metaphors does not explain a product.",
   "hierarchy": [
     {
@@ -28,11 +28,12 @@
     }
   ],
   "discovery": [
+    "Follow authoringProtocol below before drafting prose. Reader-facing documentation is the primary deliverable. Populate readerGuide on project and each feature; legacy six-section implementation notes alone are not accepted for new generated candidates.",
     "Inspect repository documentation, manifests and executable entry points to establish what the product does and who uses it.",
     "Call get_inventory and follow nextOffset until null to inventory the full indexed repository; stop and restart discovery if indexedAt changes. Expand truncated graphs and search for areas missing from the initial view. Separate user-facing behavior, developer-facing library APIs, shared foundations, tests, experiments and generated code.",
     "Write project.overview first: what (plain-language product explanation), usage (actual CLI/MCP/API interfaces and commands), workflow (ordered, source-grounded stages with optional branches identified), tools (actual exposed tool/command names and behavior), and connections (feature IDs plus an explanation of what each supplies to the next). Every usage, stage, tool and connection needs source citations. Do not imply that optional embeddings, models, caches or hosted services are required by the default path. Explain how the graph is constructed, stored and used for retrieval in concrete terms.",
     "Generate project.overview.journeys for the principal user goals. Write for someone who does not code: action, visible/expected result, real choices and progressive details in ordinary language. Keep filenames and technical terms in evidence, not the main story. Branch only when source supports distinct behavior. Include normal, failure and changed-state scenarios when observed. Scenarios describe expected behavior, never a passed or executed test. Unsupported behavior must be described as unknown, not invented.",
-    "The default explorer is a compact workflow diagram, not a set of generic tutorials. Start with the product\u2019s real purpose and one coherent lifecycle; separate workflows only when they represent meaningfully different product jobs. Supply a validated mainPath, short diagramLabel for each step, and benefit text explaining why that stage exists. For agent-context tools, explain actual mechanisms such as indexed reuse, narrow ranking, bounded payloads, revision checks and knowledge reuse. Do not invent measured token savings or latency claims. Prose, evidence and scenarios are revealed on interaction rather than occupying the main diagram.",
+    "The default explorer is a compact workflow diagram, not a set of generic tutorials. Start with the product’s real purpose and one coherent lifecycle; separate workflows only when they represent meaningfully different product jobs. Supply a validated mainPath, short diagramLabel for each step, and benefit text explaining why that stage exists. For agent-context tools, explain actual mechanisms such as indexed reuse, narrow ranking, bounded payloads, revision checks and knowledge reuse. Do not invent measured token savings or latency claims. Prose, evidence and scenarios are revealed on interaction rather than occupying the main diagram.",
     "Trace each proposed feature from its routes, commands, public APIs or UI actions through its implementation and related tests. Use source evidence to confirm boundaries across folders rather than naming folders as features.",
     "Choose stable feature IDs and meaningful capability boundaries. Reuse existing reviewed identities where possible. Use narrow file prefixes when unrelated responsibilities share a folder.",
     "Read representative source excerpts for every area. Identify supported inputs, outputs, state changes, error paths and dependencies. Distinguish code observations from intended behavior described only in documentation.",
@@ -180,11 +181,132 @@
             ]
           }
         ]
+      },
+      "readerGuide": {
+        "audience": "Who uses this product or feature, in one sentence.",
+        "outcome": {
+          "text": "The concrete result the reader can achieve and its boundary.",
+          "evidence": [
+            {
+              "path": "src/entry.ts",
+              "line": 1,
+              "reason": "Explain exactly which observed behavior this source supports."
+            }
+          ]
+        },
+        "prerequisites": [
+          {
+            "text": "An actual requirement before this workflow starts; omit unsupported assumptions.",
+            "evidence": [
+              {
+                "path": "src/entry.ts",
+                "line": 1,
+                "reason": "Explain exactly which observed behavior this source supports."
+              }
+            ]
+          }
+        ],
+        "rules": [
+          {
+            "text": "A source-verified constraint or invariant that changes what the user can expect.",
+            "evidence": [
+              {
+                "path": "src/entry.ts",
+                "line": 1,
+                "reason": "Explain exactly which observed behavior this source supports."
+              }
+            ]
+          }
+        ],
+        "glossary": [
+          {
+            "term": "A real product term",
+            "meaning": "Plain-language meaning in this product, not a generic dictionary definition.",
+            "evidence": [
+              {
+                "path": "src/entry.ts",
+                "line": 1,
+                "reason": "Explain exactly which observed behavior this source supports."
+              }
+            ]
+          }
+        ],
+        "workflows": [
+          {
+            "id": "principal-job",
+            "title": "A product outcome",
+            "goal": "The job someone wants to complete.",
+            "trigger": "The user action, event or command that starts it.",
+            "start": "start",
+            "mainPath": [
+              "start",
+              "outcome"
+            ],
+            "steps": [
+              {
+                "id": "start",
+                "title": "Start the operation",
+                "diagramLabel": "Start the operation",
+                "kind": "action",
+                "action": "What the user or system does in ordinary language.",
+                "result": "Concrete observable result supported by the implementation.",
+                "choices": [
+                  {
+                    "label": "Operation completes",
+                    "next": "outcome"
+                  }
+                ],
+                "evidence": [
+                  {
+                    "path": "src/entry.ts",
+                    "line": 1,
+                    "reason": "Explain exactly which observed behavior this source supports."
+                  }
+                ]
+              },
+              {
+                "id": "outcome",
+                "title": "Receive the result",
+                "diagramLabel": "Receive the result",
+                "kind": "outcome",
+                "action": "What the user or system does in ordinary language.",
+                "result": "Concrete observable result supported by the implementation.",
+                "choices": [],
+                "evidence": [
+                  {
+                    "path": "src/entry.ts",
+                    "line": 1,
+                    "reason": "Explain exactly which observed behavior this source supports."
+                  }
+                ]
+              }
+            ],
+            "scenarios": [
+              {
+                "title": "Normal outcome",
+                "given": "A source-supported starting situation.",
+                "when": "The triggering user action.",
+                "then": "The expected observable result; this is not an executed test.",
+                "steps": [
+                  "start",
+                  "outcome"
+                ],
+                "evidence": [
+                  {
+                    "path": "src/entry.ts",
+                    "line": 1,
+                    "reason": "Explain exactly which observed behavior this source supports."
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       }
     },
     "area": {
       "summary": "At least 80 characters of explanatory prose, maximum 4000",
-      "documentation": "All six sections, each 40\u20138000 characters; use paragraphs, not citation lists",
+      "documentation": "All six sections, each 40–8000 characters; use paragraphs, not citation lists",
       "evidence": [
         {
           "path": "indexed/repository/relative/file",
@@ -198,8 +320,45 @@
           "line": 1,
           "reason": "Why a reader should start here (at least 20 characters)"
         }
-      ]
+      ],
+      "readerGuide": "Use the same readerGuide object as project. Required on features; optional on capabilities and foundations when they have their own meaningful workflows."
     },
-    "notes": "Feature entryPoints are required. Capabilities and foundations may include them. Every citation must point to an indexed file and valid current line. Every assigned prefix must contain indexed source. Quality checks validate structure and references, not truth or completeness."
-  }
+    "notes": "Feature entryPoints are required. Capabilities and foundations may include them. Every citation must point to an indexed file and valid current line. Every assigned prefix must contain indexed source. Quality checks validate structure and references, not truth or completeness. New generated candidates require readerGuide for the project and every feature. All reader guide outcome, prerequisite, rule, glossary and workflow claims need citations. Existing saved maps remain readable. Flow diagrams are generated from the same workflow object used by the explanation."
+  },
+  "authoringProtocol": [
+    {
+      "phase": "Discover the product vocabulary",
+      "work": "Identify the people or agents who use the product, the jobs they perform, and the objects they work with. Compare README terminology with real commands, routes, screens and handlers. Name features after recognizable outcomes. A developer tool has real product language too: project knowledge, source context, freshness, reuse. Do not invent commercial terminology or rename internal folders into business domains."
+    },
+    {
+      "phase": "Trace before writing",
+      "work": "For each principal job, read its entry point and follow the implementation through inputs, guards, state changes, downstream consumers and returned results. Read related tests as assertions, not proof they passed. Build an evidence ledger linking each outcome, rule, prerequisite and branch to a file, line and reason. README intent is not sufficient evidence of current implementation. Fetch current source through the harness; do not execute repository code to discover behavior."
+    },
+    {
+      "phase": "Write for the reader",
+      "work": "Supply readerGuide on the project and every feature. Explain the audience and achievable outcome first. Use actor + active verb + concrete result. Define unavoidable domain terms once in the glossary. Explain prerequisites and rules only when supported; empty lists are valid. Keep implementation names, protocols, transport and file paths behind technical details unless they are the interface the user actually chooses. Write a short paragraph per idea. Avoid restating names, marketing language, vague verbs and padding to satisfy a length requirement."
+    },
+    {
+      "phase": "Model the actual workflows",
+      "work": "Describe one coherent core lifecycle at project level; use separate workflows for genuinely different jobs within a feature. Every workflow needs a trigger, goal, explicit mainPath and source-backed steps with action and result. Prefer 3–8 meaningful steps; use details for depth. Name diagramLabel with a short verb phrase (at most 80 characters). Use kind=decision for an actual code-supported choice and label the edges with its condition; kind=outcome ends a route. Include observed failure/empty/stale/permission outcomes where they matter. Do not add generic success/failure branches without reading the code. All routes must terminate; explain retries as separate outcomes. Atlas derives Mermaid from this structure—do not submit raw Mermaid, HTML, click handlers or remote diagrams."
+    },
+    {
+      "phase": "Review the explanation against source",
+      "work": "Walk the normal route and important alternatives from trigger to observable outcome. Confirm each statement against current source, distinguish required from optional behavior, and identify unverified assumptions in documentation.limitations. Check that the chart and prose say the same thing, that every edge has a meaningful label, and that the guide answers what, who, when, how and what happens otherwise. Record relevant test assertions and disclose whether tests ran. Schema acceptance does not establish semantic accuracy. If the index changes, refresh evidence before submission."
+    },
+    {
+      "phase": "Maintain the guide",
+      "work": "Preserve stable IDs, reviewed ownership and the saved map. Re-read changed function bodies as well as signatures: unchanged structure does not establish unchanged behavior. Revise affected rules, glossary and workflows together, then submit an unreviewed candidate tied to indexedAt. Never replace reviewed documentation automatically."
+    }
+  ],
+  "qualityChecklist": [
+    "A newcomer can explain what the product does and who uses it after the opening paragraph.",
+    "Feature and workflow names describe actual product jobs rather than folders, classes or generic tutorials.",
+    "Each flow has a verified trigger, core route, concrete results, and important supported alternatives.",
+    "Rules, prerequisites and unfamiliar terms have evidence; absent information is disclosed instead of invented.",
+    "Descriptions use the same vocabulary across product, feature, workflow and diagram.",
+    "Source evidence supports the specific claim; references exist and have been read, not just attached.",
+    "Tests are described accurately as assertions or executed results, with missing verification disclosed.",
+    "No performance, completeness, runtime-order or security claim is inferred from structural validation alone."
+  ]
 }

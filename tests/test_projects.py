@@ -48,7 +48,9 @@ class ProjectTests(unittest.TestCase):
         from atlas_index.documentation import SECTIONS
         guide = {key: 'This area implements the service behavior. Read the current source and verify its boundaries before depending on this explanation.' for key in SECTIONS}
         candidate['project'] = {'name': 'Service', 'summary': 'This project exposes a small service interface with local implementation and explicit behavior to inspect in the source.', 'documentation': guide}
-        from feature_fixture import overview_fixture
+        from feature_fixture import overview_fixture, reader_guide_fixture
+        candidate['project']['readerGuide'] = reader_guide_fixture('service/app.py')
+        candidate['features'][0]['readerGuide'] = reader_guide_fixture('service/app.py')
         candidate['project']['overview'] = overview_fixture('service/app.py', candidate['project']['summary'])
         candidate['features'][0].update(summary=candidate['project']['summary'], documentation=guide, entryPoints=[{'path': 'service/app.py', 'line': 1, 'reason': 'Start here to inspect the service implementation.'}])
         route = f'/api/projects/{identity}/candidate'

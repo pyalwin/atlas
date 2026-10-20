@@ -9,7 +9,7 @@ from collections import defaultdict
 from contextlib import closing
 from pathlib import Path
 
-PROJECTION_VERSION = 5
+PROJECTION_VERSION = 6
 DEFAULT_EXCLUSIONS = ('tests', 'test', 'deploy', 'devex', 'buildkite', '.github')
 SAMPLE_LIMIT = 5
 
@@ -33,7 +33,7 @@ def curated_node(raw, node_id, kind, parent, category):
             'path': '', 'line': None, 'endLine': None, 'summary': raw['summary'],
             'summarySource': raw.get('summarySource', 'curated'), 'language': None, 'category': category,
             'evidence': raw.get('evidence', []), 'documentation': raw.get('documentation', {}),
-            'entryPoints': raw.get('entryPoints', []), 'overview': raw.get('overview'),
+            'readerGuide': raw.get('readerGuide'), 'entryPoints': raw.get('entryPoints', []), 'overview': raw.get('overview'),
             'celestialRole': {'product-universe': 'galaxy', 'feature': 'sun', 'capability': 'planet', 'foundation': 'shared foundation'}.get(kind),
             'reason': raw.get('reason', ''), 'confidence': raw.get('confidence'),
             'metrics': dict(files=0, symbols=0, lines=0, children=0, imports=0, importedBy=0)}

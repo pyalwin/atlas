@@ -1,3 +1,4 @@
+import {MermaidWorkflow} from './MermaidWorkflow.jsx';
 import {primaryPath, workflowLayout} from './workflow-layout.mjs';
 import React, {useState} from 'react';
 
@@ -9,6 +10,7 @@ function Detail({detail, onSource}) {
 }
 
 export function FunctionalityExplorer({journeys, onSource}) {
+  const [diagramView, setDiagramView] = useState('flow');
   const [selectedId, setSelectedId] = useState(journeys[0]?.id);
   const [selectedStep, setSelectedStep] = useState(null);
   const [expanded, setExpanded] = useState([]);
@@ -24,7 +26,9 @@ export function FunctionalityExplorer({journeys, onSource}) {
   return <section className="functionality-explorer" aria-label="Functionality explorer">
     <header><span className="eyebrow">HOW THE PRODUCT WORKS</span><h2>{journey.title}</h2><p>{journey.goal}</p></header>
     {journeys.length > 1 && <nav className="workflow-tabs" aria-label="Workflows">{journeys.map(item => <button key={item.id} aria-pressed={journey.id === item.id} onClick={() => selectJourney(item.id)}>{item.title}</button>)}</nav>}
-    <div className="workflow-diagram" aria-label="Interactive workflow diagram">
+    {journey.trigger && <p className="workflow-trigger"><strong>Starts when</strong> {journey.trigger}</p>}
+    <nav className="workflow-tabs" aria-label="Diagram view"><button aria-pressed={diagramView === 'flow'} onClick={() => setDiagramView('flow')}>Flow diagram</button><button aria-pressed={diagramView === 'explore'} onClick={() => setDiagramView('explore')}>Expand step by step</button></nav>
+    {diagramView === 'flow' ? <MermaidWorkflow workflow={journey} onSelect={selectStep}/> : <div className="workflow-diagram" aria-label="Interactive workflow diagram">
       <svg viewBox={`0 0 ${layout.width} ${layout.height}`} role="group" aria-label="Workflow steps; select a step to see what it does">
         <defs><marker id="workflow-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#638b85"/></marker></defs>
         {layout.links.map((link, index) => {const from = layout.positions.get(link.from), to = layout.positions.get(link.to); const alternate = !main.includes(link.to); return <g key={index}>
@@ -33,11 +37,11 @@ export function FunctionalityExplorer({journeys, onSource}) {
         </g>;})}
         {layout.nodes.map(step => {const point = layout.positions.get(step.id);return <foreignObject key={step.id} x={point.x} y={point.y} width="166" height="90"><button className={`workflow-node ${selectedStep === step.id ? 'selected' : ''} ${example?.steps.includes(step.id) ? 'scenario-step' : ''}`} aria-pressed={selectedStep === step.id} onClick={() => selectStep(step.id)}><span>{step.diagramLabel || step.title}</span><small>{main.includes(step.id) ? 'Explore step' : 'Alternative outcome'}</small></button></foreignObject>;})}
       </svg>
-    </div>
+    </div>}
     <p className="overview-caption">Select a step to look closer. This diagram explains expected behavior; it does not run the product.</p>
-    {selected ? <div className="workflow-step-explanation" aria-live="polite"><div className="journey-header"><h3>{selected.title}</h3><button onClick={() => setSelectedStep(null)}>Close explanation</button></div><p>{selected.result}</p>
+    {selected ? <div className="workflow-step-explanation" aria-live="polite"><div className="journey-header"><h3>{selected.title}</h3><button onClick={() => setSelectedStep(null)}>Close explanation</button></div><p><strong>Action:</strong> {selected.action}</p><p><strong>What happens:</strong> {selected.result}</p>
       {selected.benefit && <p className="workflow-benefit"><strong>Why this helps</strong> {selected.benefit}</p>}
-      {hasAlternatives && <button className="workflow-expand" aria-expanded={expanded.includes(selected.id)} onClick={() => setExpanded(previous => previous.includes(selected.id) ? previous.filter(id => id !== selected.id) : [...previous, selected.id])}>{expanded.includes(selected.id) ? 'Hide alternatives' : 'Show alternative outcomes'}</button>}
+      {hasAlternatives && <button className="workflow-expand" aria-expanded={expanded.includes(selected.id)} onClick={() => (setDiagramView('explore'), setExpanded(previous => previous.includes(selected.id) ? previous.filter(id => id !== selected.id) : [...previous, selected.id]))}>{expanded.includes(selected.id) ? 'Hide alternatives' : 'Show alternative outcomes'}</button>}
       {selected.details?.map((detail, index) => <Detail key={index} detail={detail} onSource={onSource}/>)}
       <Evidence items={selected.evidence} onSource={onSource}/>
     </div> : <p className="workflow-invitation">Start with any step. The diagram stays visible while you explore.</p>}

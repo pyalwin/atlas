@@ -1,3 +1,4 @@
+import {ReaderGuide} from './ReaderGuide.jsx';
 import {FunctionalityExplorer} from './FunctionalityExplorer.jsx';
 import React, {useEffect, useState} from 'react';
 
@@ -37,8 +38,9 @@ export function ProductOverview({project, onSource}) {
     {candidate && <div className="overview-draft" role="status">Generated draft · awaiting review. This preview does not replace your saved map.</div>}
     {data.suggestion?.project?.overview && <nav className="overview-versions" aria-label="Guide version"><a href={`/?project=${project.id}`}>Product guide</a><a href={`/?project=${project.id}&map=candidate`}>Generated draft</a></nav>}
     <header><span className="eyebrow">UNDERSTAND THE PRODUCT</span><h1>What is {map.project.name}?</h1><p className="overview-lead">{overview.what}</p></header>
-    {overview.journeys?.length > 0 && <FunctionalityExplorer key={`${project.id}:${candidate}:${map.generation?.createdAt || "saved"}`} journeys={overview.journeys} onSource={onSource}/>}
-    <details className="overview-background" open={!overview.journeys?.length}><summary>Read the product guide and technical details</summary>
+    {map.project.readerGuide && <ReaderGuide guide={map.project.readerGuide} onSource={onSource}/>}
+    {!map.project.readerGuide && overview.journeys?.length > 0 && <FunctionalityExplorer key={`${project.id}:${candidate}:${map.generation?.createdAt || "saved"}`} journeys={overview.journeys} onSource={onSource}/>}
+    <details className="overview-background" open={!map.project.readerGuide && !overview.journeys?.length}><summary>Read the product guide and technical details</summary>
     <section><h2>How do I use it?</h2><div className="overview-usage">{overview.usage.map((item, index) => <div key={index}><h3>{item.name}</h3><p>{item.description}</p>{item.commands?.map((command, i) => <pre key={i}><code>{command}</code></pre>)}<Sources items={item.evidence} onSource={onSource}/></div>)}</div></section>
     <section><h2>How does it work?</h2><ol className="overview-flow">{overview.workflow.map((step, index) => <li key={index}><span className="overview-step">{index + 1}</span><div><h3>{step.title}{step.optional && <small>Optional</small>}</h3><p>{step.description}</p><Sources items={step.evidence} onSource={onSource}/></div></li>)}</ol><p className="overview-caption">This is a source-grounded explanation of the workflow, not a captured execution trace.</p></section>
     <section><h2>What can I ask it to do?</h2><div className="overview-tool-list">{overview.tools.map((tool, index) => <div key={index}><h3>{tool.name}</h3><p>{tool.description}</p><Sources items={tool.evidence} onSource={onSource}/></div>)}</div></section>

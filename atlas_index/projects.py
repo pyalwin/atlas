@@ -167,6 +167,9 @@ def validate_item(item):
 
 
 def validate_optional_documentation(item):
+    if 'readerGuide' in item:
+        from .reader_guide import validate_reader_guide
+        validate_reader_guide(item['readerGuide'])
     if 'documentation' in item:
         from .documentation import SECTIONS
         value = item['documentation']

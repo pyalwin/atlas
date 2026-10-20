@@ -32,6 +32,9 @@ test('MCP negotiation, scoping, evidence and candidate submission', async () => 
     const context = await client.callTool({name: 'get_summary_context', arguments: {project: 'allowed'}});
     assert.equal(JSON.parse(context.content[0].text).project.indexedAt, 'v1');
     assert.ok(JSON.parse(context.content[0].text).generationGuide.discovery.length >= 8);
+    assert.equal(JSON.parse(context.content[0].text).generationGuide.version, 5);
+    assert.equal(JSON.parse(context.content[0].text).generationGuide.authoringProtocol.length, 6);
+    assert.ok(JSON.parse(context.content[0].text).generationGuide.contract.project.readerGuide.workflows[0].mainPath);
     assert.equal(JSON.parse(context.content[0].text).generationGuide.hierarchy[0].level, 'product overview');
     const saved = await client.callTool({name: 'save_map_candidate', arguments: {project: 'allowed', indexedAt: 'v1', agent: 'test', map: {version: 1}}});
     assert.equal(saved.isError, undefined);

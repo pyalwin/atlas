@@ -144,6 +144,12 @@ Write a repository overview and a complete guide for every mapped feature, capab
 
 After initial discovery, treat descriptions as maintained documentation: read changed source and related tests, revise affected sections, preserve stable IDs and reviewed ownership, and submit a new candidate for review. The UI discloses when a guide describes an older index. Never claim semantic accuracy or freshness solely because the schema validator passes.
 
+## Product documentation comes first
+
+Follow [DOCUMENTATION.md](docs/DOCUMENTATION.md) and the `authoringProtocol` returned by `get_summary_context`. New generated candidates require `readerGuide` on the project and every feature: audience, outcome, prerequisites, rules, glossary and source-backed workflows. Use the repository's actual product language; trace the real entry points, conditions and results before writing. Empty prerequisites/rules/glossary lists are valid when no such claims are established. Structural validation does not prove accuracy.
+
+Workflows need a trigger, explicit mainPath and short diagramLabel values. Atlas generates local Mermaid flowcharts from this same model; do not submit a separate raw diagram. Read changed function bodies before revising behavioral documentation, even when signatures are unchanged. Keep source citations and technical detail behind the human explanation. Legacy saved maps remain readable; regenerate them through the current contract when improving their documentation.
+
 ## Functionality explorer for nontechnical readers
 
 Generate `project.overview.journeys` for the principal user goals. A journey starts with what someone wants to accomplish and expands into actions, expected outcomes, supported choices and progressively deeper explanations. Use ordinary language; keep source paths behind evidence disclosures. Do not make users navigate class names, transport names or code graphs to understand behavior.
@@ -431,6 +437,10 @@ All write requests require an `application/json` object body — including `{}` 
 - Projection caches are invalidated by source-index timestamp, map content hash, and projection version.
 
 </details>
+
+## Interface themes
+
+The header toggle switches light and dark themes. The initial theme follows the system preference unless `atlas-theme` is saved in browser storage; selection persists per origin. The inline bootstrap in `index.html` applies it before React paints. Keep both palettes in `src/styles.css` aligned when adding surfaces, including workflow diagrams and graph labels.
 
 ## Development and verification
 

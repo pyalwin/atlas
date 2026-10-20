@@ -4,7 +4,7 @@ import subprocess
 import unittest
 from pathlib import Path
 
-from feature_fixture import overview_fixture
+from feature_fixture import overview_fixture, reader_guide_fixture
 
 from atlas_index.documentation import validate_candidate_documentation
 from atlas_index.indexer import index_repository
@@ -36,6 +36,8 @@ class DocumentationTests(unittest.TestCase):
                                   'entryPoints': [{'path': 'service.py', 'line': 1, 'reason': 'Read the public greeting function to understand the entire behavior.'}]}],
                     'foundations': [], 'generation': {'indexedAt': self.status['indexedAt']}}
 
+        self.map['project']['readerGuide'] = reader_guide_fixture()
+        self.map['features'][0]['readerGuide'] = reader_guide_fixture()
         self.map['project']['overview'] = overview_fixture('service.py', docs['purpose'])
 
     def tearDown(self):
@@ -58,6 +60,7 @@ class DocumentationTests(unittest.TestCase):
         self.assertEqual(feature['celestialRole'], 'sun')
         self.assertEqual(feature['documentation'], self.map['features'][0]['documentation'])
         self.assertEqual(feature['entryPoints'][0]['path'], 'service.py')
+        self.assertEqual(feature['readerGuide'], self.map['features'][0]['readerGuide'])
         self.assertEqual(feature['documentationFreshness'], 'current')
 
     def test_rejects_one_line_reference_instead_of_explanation(self):
@@ -136,3 +139,32 @@ class DocumentationTests(unittest.TestCase):
             mutate(changed['project']['overview']['journeys'][0])
             with self.assertRaises(ValueError):
                 self.validate(changed)
+
+    def test_reader_guide_requires_source_backed_business_explanations(self):
+        for mutate in [lambda g: g.update(outcome={'text': 'A useful result.'}),
+                       lambda g: g.update(glossary=[{'term': 'Result', 'meaning': 'Returned information.', 'evidence': [{'path': 'service.py', 'line': 999}]}]),
+                       lambda g: g['workflows'][0].pop('mainPath'),
+                       lambda g: g['workflows'][0].pop('trigger'),
+                       lambda g: g['workflows'][0]['steps'][0].update(kind='decision'),
+                       lambda g: g['workflows'][0]['steps'][0].update(kind='outcome'),
+                       lambda g: g['workflows'][0]['steps'][0].update(diagramLabel='x' * 81),
+                       lambda g: g.update(rules=[{'text': 'Always succeeds.', 'evidence': []}])]:
+            raw = copy.deepcopy(self.map)
+            mutate(raw['features'][0]['readerGuide'])
+            with self.subTest(guide=raw['features'][0]['readerGuide']), self.assertRaises(ValueError):
+                self.validate(raw)
+
+    def test_legacy_saved_maps_remain_readable_but_new_candidates_need_reader_guides(self):
+        raw = copy.deepcopy(self.map)
+        del raw['project']['readerGuide']
+        del raw['features'][0]['readerGuide']
+        validate_map(raw)
+        with self.assertRaisesRegex(ValueError, 'Reader guide'):
+            validate_candidate_documentation(raw, self.db, self.root)
+
+    def test_duplicate_glossary_terms_are_rejected(self):
+        raw = copy.deepcopy(self.map)
+        term = {'term': 'Greeting', 'meaning': 'The text returned to the caller.', 'evidence': [{'path': 'service.py', 'line': 1}]}
+        raw['features'][0]['readerGuide']['glossary'] = [term, {**term, 'term': ' greeting '}]
+        with self.assertRaisesRegex(ValueError, 'unique'):
+            self.validate(raw)

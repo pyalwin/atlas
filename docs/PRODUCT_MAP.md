@@ -122,3 +122,7 @@ Step IDs must be unique, every step must be reachable, and paths must end rather
 Scenarios have `title`, `given`, `when`, `then`, `evidence` and `steps`, a complete valid path from the journey’s start to a terminal outcome. These are generated behavior expectations, not test executions or evidence of passing tests. Validate paths, citations and source-supported outcomes before submission. Do not infer unobserved failure handling, permissions or user-visible messages.
 
 The explorer renders a diagram by default. Optional `mainPath` must follow declared choices from the start to a terminal outcome; `diagramLabel` provides short node text, and `benefit` explains the concrete reason for a stage. Expanding a node reveals supported alternative branches. Longer explanations, evidence and behavior scenarios are secondary. Quantitative efficiency claims require independent supporting measurements.
+
+## Reader-facing product guides
+
+New generated candidates require `readerGuide` for the project and every feature. See [DOCUMENTATION.md](DOCUMENTATION.md) for the authoring process, evidence contract and Mermaid workflow model. Implementation notes remain separate. Existing saved maps are compatible.
